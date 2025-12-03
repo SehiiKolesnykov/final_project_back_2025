@@ -1,22 +1,13 @@
 spring:
-  # ─────────────────────── H2 БАЗА (для розробки) ───────────────────────
+  # ─────────────────────── POSTGRESQL (Neon) ───────────────────────
   datasource:
+    url: jdbc:postgresql://ep-ancient-band-adea5qk2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    driver-class-name: org.postgresql.Driver
+    username: neondb_owner
+    password: npg_uteRxP3B8Oor
 
-    url: jdbc:h2:file:./data/step_project_db # зберігає данні на диску
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  h2:
-    console:
-      enabled: true               # веб-інтерфейс H2 за адресою /h2-console
-      path: /h2-console
-      settings:
-        web-allow-others: false
-
-  # ─────────────────────── JPA / HIBERNATE ───────────────────────
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update            # створює/оновлює таблиці автоматично
     show-sql: true                # SQL-запити в консолі
