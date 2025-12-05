@@ -73,7 +73,7 @@ public class SecurityConfig {
      * }
      * };
      * }
-     */
+      Це можете перевірити та видалити бо то для тесту робив*/
     public static void main(String[] args) {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
         String hash = encoder.encode("securepassword");
