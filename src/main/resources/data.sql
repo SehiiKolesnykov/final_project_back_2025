@@ -4,7 +4,7 @@ VALUES (
     'Oleksii',
     'Zharkov',
     'test@example.com',
-    '$2a$12$2WEBszYXkFPtd9YGo5dbOeqPvlahxp7n5VR8E0q2JQ4uZFQOPrfG',
+    '$2a$12$LLWsUxTy0TskZwr9U.4SFeMVVOmlUqnoW326.W7LGd/AHMVz1VnI2',
     '2001-01-01',
     TRUE
 );
