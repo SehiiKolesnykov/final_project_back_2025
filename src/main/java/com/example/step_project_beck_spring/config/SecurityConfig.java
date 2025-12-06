@@ -1,82 +1,64 @@
 package com.example.step_project_beck_spring.config;
 
-import com.example.step_project_beck_spring.entities.User;
-import com.example.step_project_beck_spring.repository.UserRepository;
-import org.springframework.boot.CommandLineRunner;
+import com.example.step_project_beck_spring.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-import java.time.LocalDate;
-import java.util.UUID;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
-
 public class SecurityConfig {
 
+    private final JwtAuthenticationFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
     /**
-     * BCrypt — алгоритм для паролів.
-     * 10–12 — я вважаю що цього буде достатньо.
+     * Основний ланцюг безпеки (SecurityFilterChain).
+     * Вимикаємо CSRF,Дозволяємо публічний доступ до /api/auth/** та /api/user/** (реєстрація, логін, перегляд профілю).
+     *  Всі інші запити вимагають автентифікації.
+     *  - Додаємо наш JwtAuthenticationFilter перед стандартним UsernamePasswordAuthenticationFilter.
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // CSRF не потрібен для REST API
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/user/**").permitAll() // публічні ендпоінти
+                        .anyRequest().authenticated() // решта потребує JWT
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // без сесій
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // додаємо наш JWT-фільтр
+
+        return http.build();
+    }
+
+    /**
+     * AuthenticationManager — використовується для логіну.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    /**
+     * PasswordEncoder — алгоритм для хешування паролів.
+     * Використовуємо BCrypt із силою 12 (достатньо безпечно для більшості випадків).
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
-
-    /**
-     * Bean, який встановлює правила доступу (Security Filter Chain) та дозволяє публічний доступ до всіх GET-запитів на /api/user/
-     ***/
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(authorize -> authorize
-                        /** Дозволяємо публічний доступ до User */
-                        .requestMatchers("/api/user/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                /** Вимкнення захисту CSRF (потрібно для коректної роботи REST API) */
-                .csrf(csrf -> csrf.disable())
-                /** Відключення стандартних форм аутентифікації */
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
-
-        return http.build();
-    }
-    /** Додаю тестового користувача до бази даних при старті програми.
-     * @param userRepository Репозиторій для збереження даних
-     * @param passwordEncoder Кодувальник паролів
-     */
-    /**
-     * @Bean public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-     * // return args -> {
-     * UUID testUuid = UUID.fromString("f2b05697-b892-4f33-8a9d-598d9c2a6f11");
-     * <p>
-     * if (userRepository.findById(testUuid).isEmpty()) {
-     * <p>
-     * User testUser = new User();
-     * testUser.setId(testUuid);
-     * testUser.setFirstName("Oleksii");
-     * testUser.setLastName("Zharkov");
-     * testUser.setEmail("test@example.com");
-     * <p>
-     * testUser.setPassword(passwordEncoder.encode("securepassword"));
-     * testUser.setBirthDate(LocalDate.of(2001, 1, 1));
-     * testUser.setEmailVerified(true);
-     * <p>
-     * userRepository.save(testUser);
-     * System.out.println(" TEST: Oleksii Zharkov.");
-     * }
-     * };
-     * }
-      Це можете перевірити та видалити бо то для тесту робив*/
-    public static void main(String[] args) {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
-        String hash = encoder.encode("securepassword");
-        System.out.println("ХЕШ ДЛЯ ВСТАВКИ: " + hash);
-    }
 }
+
+
+
