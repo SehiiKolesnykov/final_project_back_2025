@@ -1,4 +1,4 @@
-package com.example.step_project_beck_spring.entitys;
+package com.example.step_project_beck_spring.entities;
 
 import jakarta.persistence.*;
 import lombok.*;

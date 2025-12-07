@@ -1,6 +1,6 @@
 package com.example.step_project_beck_spring.repository;
 
-import com.example.step_project_beck_spring.entitys.Post;
+import com.example.step_project_beck_spring.entities.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
