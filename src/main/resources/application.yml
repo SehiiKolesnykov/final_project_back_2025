@@ -27,6 +27,9 @@ logging:
 server:
   port: 8080
 
-# ─────────────────────── POST DEVELOPMENT ──────────────────────
+# ─────────────────────── CLOUDINARY - image upload ──────────────────────
 
-# Коли будемо деплоїти замінимо ці налаштування на справжню дб.
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
