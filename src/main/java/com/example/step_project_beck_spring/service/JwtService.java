@@ -1,75 +1,105 @@
 package com.example.step_project_beck_spring.service;
 
+import com.example.step_project_beck_spring.entities.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.function.Function;
 
+/**
+ * Сервіс для генерації, парсингу та валідації JWT-токенів.
+ *
+ * Використовується і фільтром (JwtAuthenticationFilter), і AuthService.
+ * Важливо: секретний ключ має бути довгим та випадковим, і в продакшені — в .env / application.yml!
+ */
 @Service
 public class JwtService {
 
-    // Секретний ключ для підпису токенів.
-    // ? винести у application.yml, щоб не тримати в коді.
-    private final String secretKey = "superSecretKeyForJwt";
+    // Секретний ключ для підпису токенів (HS256).
+    // Зараз захардкоджений — це ОК тільки для розробки!
+    // У продакшені обов’язково винести в application.yml або змінні оточення!
+    private final String secretKey = "8F2Kj9LmNqRtUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcdef12345678";
 
-    // Час життя токена для звичайного входу: 6 годин
+    // Термін звичайного токена — 6 годин
     private final long jwtExpiration = 1000 * 60 * 60 * 6;
 
-    // Час життя токена при "залишитися у мережі": 7 днів
+    // Термін токена при "Запам’ятати мене" — 7 днів
     private final long refreshExpiration = 1000L * 60 * 60 * 24 * 7;
 
+    // Повертає ключ у форматі, який приймає JJWT
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
     /**
-     * Генерує JWT токен для користувача.
-     * userDetails — дані користувача (Spring Security UserDetails).
-     * rememberMe — якщо true → токен на 7 днів, інакше на 6 годин.
-     * @return згенерований JWT токен.
+     * Генерує JWT-токен для користувача.
+     *
+     * @param userDetails  об’єкт UserDetails (у нас це наш User, бо він implements UserDetails)
+     * @param rememberMe   якщо true → токен на 7 днів, false → на 6 годин
+     * @return готовий JWT як String
      */
     public String generateToken(UserDetails userDetails, boolean rememberMe) {
         long expiration = rememberMe ? refreshExpiration : jwtExpiration;
+        User user = (User) userDetails;  // безпечний каст, бо наш User реалізує UserDetails
+
         return Jwts.builder()
-                .setSubject(userDetails.getUsername()) // email користувача
-                .setIssuedAt(new Date())               // час створення токена
-                .setExpiration(new Date(System.currentTimeMillis() + expiration)) // час життя
-                .signWith(SignatureAlgorithm.HS256, secretKey) // алгоритм підпису
+                .setSubject(user.getEmail())                       // стандартне поле — email як username
+                .claim("userId", user.getId().toString())          // кастомне поле — UUID користувача
+                .claim("rememberMe", rememberMe)                   // щоб знати, чи був "запам’ятати мене"
+                .setIssuedAt(new Date())                           // коли виданий
+                .setExpiration(new Date(System.currentTimeMillis() + expiration)) // коли закінчується
+                .signWith(SignatureAlgorithm.HS256, secretKey)     // підпис (старий спосіб, але працює в 0.11.5)
                 .compact();
     }
 
-    /**
-     * Витягує email із токена.
-     */
-    public String extractUsername(String token) {
+    // Універсальний метод для витягування будь-якого claim з токена
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    // Парсить токен і повертає всі claims (з перевіркою підпису)
+    private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(secretKey)
+                .setSigningKey(secretKey)           // старий метод, бо нова версія JJWT 0.12+ ламає сумісність
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
+    }
+
+    /** Витягує email (email) з токена */
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    /** Витягує userId (UUID у вигляді String) з токена */
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
     }
 
     /**
-     * Перевіряє чи email із токена збігається з користувачем
-     *  - чи токен ще не прострочений
+     * Перевіряє валідність токена:
+     * - чи збігається email
+     * - чи не прострочений
      */
     public boolean validateToken(String token, UserDetails userDetails) {
         String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    /**
-     * Перевіряє, чи токен прострочений.
-     * @return true, якщо токен уже недійсний.
-     */
+    /** Чи закінчився термін дії токена */
     private boolean isTokenExpired(String token) {
-        Date expiration = Jwts.parser()
-                .setSigningKey(secretKey)
-                .parseClaimsJws(token)
-                .getBody()
-                .getExpiration();
-        return expiration.before(new Date());
+        return extractExpiration(token).before(new Date());
+    }
+
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 }
-
-
-
-
