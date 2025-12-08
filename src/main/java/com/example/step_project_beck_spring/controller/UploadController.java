@@ -1,38 +1,48 @@
 package com.example.step_project_beck_spring.controller;
 
-import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.service.CurrentUserService;
 import com.example.step_project_beck_spring.service.UploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * Контролер для роботи з завантаженням файлів.
- * Всі ендпоінти — приватні, вимагають авторизацію через JWT.
- * Ніколи не приймає файли напряму — тільки видає підписи та видаляє.
+ * Контролер для безпечного завантаження файлів через Cloudinary.
+ * Важливо: самі файли НІКОЛИ не проходять через наш бекенд!
+ * Фронтенд отримує підпис (signature) → завантажує напряму в Cloudinary → ми лише зберігаємо public_id.
+ *
+ * Всі ендпоінти захищені JWT (потрібна автентифікація).
  */
-@RestController
+@RestController                     // Повертає JSON
 @RequestMapping("/api/upload")
 @RequiredArgsConstructor
 public class UploadController {
 
+    // Сервіс, який генерує підписи та видаляє зображення у Cloudinary
     private final UploadService uploadService;
 
+    // Сервіс для отримання ID поточного користувача з JWT (без зайвого витягування User-об’єкта)
+    private final CurrentUserService currentUserService;
+
     /**
-     * Повертає підпис для завантаження зображення.
-     * type: avatar | background | post
+     * GET /api/upload/signature/{type}
+     *
+     * Повертає підпис (signature) + timestamp для прямого завантаження на Cloudinary.
+     * Типи:
+     *  - avatar      → папка users/avatars/{userId}
+     *  - background  → папка users/backgrounds/{userId}
+     *  - post        → папка posts/{userId}
      */
     @GetMapping("/signature/{type}")
-    public ResponseEntity<Map<String, Object>> getSignature(
-            @PathVariable String type,
-            @AuthenticationPrincipal User principal) { // отримуємо авторизованого користувача
+    public ResponseEntity<Map<String, Object>> getSignature(@PathVariable String type) {
 
-        String userId = principal.getId().toString();
+        // Отримуємо ID авторизованого користувача з JWT (без @AuthenticationPrincipal)
+        UUID userId = currentUserService.getCurrentUserId();
 
+        // Визначаємо папку в Cloudinary залежно від типу завантаження
         String folder = switch (type) {
             case "avatar"      -> "users/avatars/" + userId;
             case "background"  -> "users/backgrounds/" + userId;
@@ -40,34 +50,34 @@ public class UploadController {
             default -> throw new IllegalArgumentException("Invalid type: " + type);
         };
 
+        // Timestamp потрібен Cloudinary для підпису (в секундах)
         long timestamp = System.currentTimeMillis() / 1000L;
+
+        // Генеруємо підпис та інші параметри через UploadService
         Map<String, Object> response = uploadService.generateSignature(folder, timestamp);
+
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Видаляє конкретне зображення з Cloudinary.
+     * DELETE /api/upload/image
+     *
+     * Видаляє зображення з Cloudinary за public_id.
+     *
+     * Очікує JSON:
+     * { "publicId": "users/avatars/123e4567-e89b-12d3-a456-426614174000/somefile" }
      */
     @DeleteMapping("/image")
-    public ResponseEntity<Void> deleteImage(
-            @RequestBody Map<String, String> body,
-            @AuthenticationPrincipal User principal) {
+    public ResponseEntity<Void> deleteImage(@RequestBody Map<String, String> body) {
 
         String publicId = body.get("publicId");
-        uploadService.deleteImage(publicId, principal.getId());
 
-        return ResponseEntity.ok().build();
-    }
+        // Отримуємо ID поточного користувача для перевірки прав
+        UUID currentUserId = currentUserService.getCurrentUserId();
 
-    /**
-     * Витягує ID користувача з Principal.
-     * Зараз — заглушка. В ідеалі — додати userId в JWT при логіні:
-     * claims.put("userId", user.getId().toString());
-     * І витягувати через JwtService.
-     */
-    private String getUserIdFromPrincipal(Principal principal) {
-        // TODO: Замінити на реальне отримання з JWT claims
-        // Приклад: return jwtService.getUserIdFromToken(...);
-        return principal.getName();
+        // Видаляємо зображення (з перевіркою, чи належить воно цьому користувачу)
+        uploadService.deleteImage(publicId, currentUserId);
+
+        return ResponseEntity.ok().build(); // 200 OK без тіла
     }
 }

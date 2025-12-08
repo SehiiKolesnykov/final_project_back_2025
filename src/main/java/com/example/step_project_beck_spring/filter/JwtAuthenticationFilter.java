@@ -5,6 +5,7 @@ import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,21 +16,29 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Головний JWT-фільтр.
+ * Виконується при кожному запиті (один раз — тому extends OncePerRequestFilter).
+ * Підтримує два способи передачі токена:
+ * 1. Authorization: Bearer <token> (на релізі приберемо)
+ * 2. HttpOnly-кука з назвою "jwt"
+ *
+ * Якщо токен валідний — автоматично "логінить" користувача в SecurityContext.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
 
+    private final JwtService jwtService;         // для розбору та валідації JWT
+    private final UserRepository userRepository; // щоб знайти користувача за email з токена
+
+    // Spring сам інжектить залежності через конструктор
     public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
     }
+
     /**
-     * Перевіряємо заголовок Authorization (чи є Bearer токен).
-     * Якщо токен є — дістаємо email користувача з JWT.
-     * якщо користувач ще не автентифікований у SecurityContext:
-     * шукаємо його в базі даних,перевіряємо валідність токена,
-     * створюємо UsernamePasswordAuthenticationToken і додаємо його в SecurityContext.
+     * Основна логіка фільтра.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -37,39 +46,59 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Дістаємо заголовок Authorization
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
+        String jwt = null;
 
-        // Якщо заголовка немає або він не починається з "Bearer " пропускаємо далі
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // 1. Спочатку шукаємо токен у заголовку Authorization: Bearer ...
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwt = authHeader.substring(7); // відрізаємо "Bearer "
+        }
+
+        // 2. Якщо в заголовку немає — шукаємо в куках (назва куки саме "jwt")
+        if (jwt == null && request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                    break; // знайшли — виходимо з циклу
+                }
+            }
+        }
+
+        // Якщо токена взагалі немає — просто продовжуємо ланцюжок (запит піде як анонімний)
+        if (jwt == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Вирізаємо сам токен (без "Bearer ")
-        jwt = authHeader.substring(7);
+        // Витягуємо email (або інший username) з JWT
+        String userEmail = jwtService.extractUsername(jwt);
 
-        // Дістаємо email (username) із токена
-        userEmail = jwtService.extractUsername(jwt);
-
-        // Якщо email є і користувач ще не автентифікований у SecurityContext
+        // Перевіряємо, чи є email і чи користувач ще не автентифікований у цьому запиті
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            // Шукаємо користувача в базі за email з токена
             User user = userRepository.findByEmail(userEmail).orElse(null);
 
-            // Перевіряємо токен і якщо він правильний— додаємо користувача в SecurityContext
+            // Якщо користувач існує і токен валідний (не прострочений, підпис правильний тощо)
             if (user != null && jwtService.validateToken(jwt, user)) {
+
+                // Створюємо об’єкт автентифікації для Spring Security
                 UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                                user,                    // principal — сам об’єкт User
+                                null,                    // credentials — не потрібні, бо вже є JWT
+                                user.getAuthorities()    // ролі/права користувача
+                        );
+
+                // Додаємо деталі запиту (IP, sessionId тощо) — корисно для логування/аудиту
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
+                // Зберігаємо автентифікацію в SecurityContext — тепер @AuthenticationPrincipal працює!
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
+        // У будь-якому випадку продовжуємо ланцюжок фільтрів
         filterChain.doFilter(request, response);
     }
 }
-
-
-
