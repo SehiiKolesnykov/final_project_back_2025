@@ -1,15 +1,15 @@
 spring:
   # ─────────────────────── POSTGRESQL (Neon) ───────────────────────
   datasource:
-    url: jdbc:postgresql://ep-ancient-band-adea5qk2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+    url: ${DB_URL}
     driver-class-name: org.postgresql.Driver
-    username: neondb_owner
-    password: npg_uteRxP3B8Oor
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate            # створює/оновлює таблиці автоматично
+      ddl-auto: update              # створює/оновлює таблиці автоматично
     show-sql: true                # SQL-запити в консолі
     properties:
       hibernate:
@@ -25,7 +25,7 @@ logging:
 
 # ─────────────────────── SERVER ──────────────────────
 server:
-  port: 8080
+  port: 9000
 
 # ─────────────────────── CLOUDINARY - image upload ──────────────────────
 
