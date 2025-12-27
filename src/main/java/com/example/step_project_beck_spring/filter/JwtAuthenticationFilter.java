@@ -38,6 +38,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
+     * Визначає, чи потрібно застосовувати фільтр для цього запиту.
+     * Повністю вимикаємо фільтр для /api/auth/** та /ws/**
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path != null && (path.startsWith("/api/auth/") || path.startsWith("/ws/"));
+    }
+
+    /**
      * Основна логіка фільтра.
      */
     @Override
