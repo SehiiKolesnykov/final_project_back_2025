@@ -13,9 +13,9 @@ public class UserPublicDTO {
 
     /** Унікальний ідентифікатор користувача */
     private UUID id;
-
     private String firstName;
     private String lastName;
+    private String email;
     private String avatarUrl;
     private String backgroundImg;
 

@@ -1,13 +1,18 @@
 package com.example.step_project_beck_spring.config;
 
 import com.example.step_project_beck_spring.filter.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,94 +24,76 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Головна конфігурація Spring Security для нашого REST API.
- * Використовуємо JWT + stateless сесії, тому CSRF вимкнено, сесії не зберігаються.
+ * Головна конфігурація Spring Security.
  */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor // Автоматично створить конструктор для полів final
 public class SecurityConfig {
 
-    // Фільтр, який перевіряє JWT-токен у кожному запиті
     private final JwtAuthenticationFilter jwtAuthFilter;
 
-    // Spring сам інжектить наш JwtAuthenticationFilter (він зареєстрований як @Component)
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
-        this.jwtAuthFilter = jwtAuthFilter;
-    }
+    // Spring знайде будь-який клас UserDetailsService
+    private final UserDetailsService userDetailsService;
 
     /**
      * Основний ланцюжок фільтрів безпеки.
-     * Тут визначаємо всі правила доступу, CORS, сесії тощо.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Підключаємо власну CORS-конфігурацію
+                .csrf(AbstractHttpConfigurer::disable) // Новий синтаксис для вимкнення CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // CSRF не потрібен у stateless REST API з JWT
-                .csrf(csrf -> csrf.disable())
-
-                // Правила авторизації для різних ендпоінтів
                 .authorizeHttpRequests(auth -> auth
-                        // Доступ за токеном — автентифікація та реєстрація
+                        // Доступ без токена
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Підписування завантажень на Cloudinary — тільки авторизовані користувачі
+
+                        // Доступ тільки з токеном
                         .requestMatchers("/api/upload/**").authenticated()
-                        // Всі дії з профілем користувача — тільки авторизовані
                         .requestMatchers("/api/user/**").authenticated()
-                        // Усі інші запити також вимагають автентифікацію
                         .anyRequest().authenticated()
                 )
-
-                // Не створюємо та не зберігаємо HTTP-сесію — працюємо тільки з JWT
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Додаємо наш JWT-фільтр ПЕРЕД стандартним фільтром логін/пароль
+                //провайдер щоб Spring знав як перевіряти паролі
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * Налаштування CORS.
-     * Наразі дозволено все (для розробки). У продакшені вкажемо точний origin фронтенду,
+     * Провайдер автентифікації.
+     * Він з'єднує UserDetailsService (пошук юзера) та PasswordEncoder (перевірка пароля).
      */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-
-        // Дозволяємо будь-який origin (можна замінити на конкретний домен)
-        config.setAllowedOriginPatterns(List.of("*"));
-        // Дозволені HTTP-методи
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // Дозволяємо будь-які заголовки
-        config.setAllowedHeaders(List.of("*"));
-        // Дозволяємо передавати куки/авторизаційні заголовки (важливо для credentials)
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Застосовуємо ці налаштування до всіх шляхів
-        source.registerCorsConfiguration("/**", config);
-        return source;
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());    // Вказуємо чим шифрувати пароль
+        return authProvider;
     }
 
-    /**
-     * AuthenticationManager потрібен для обробки логіну (JwtAuthenticationController).
-     * Беремо готовий з AuthenticationConfiguration.
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * Кодувальник паролів.
-     * BCrypt з силою 12 — гарний баланс між безпекою та швидкістю.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
