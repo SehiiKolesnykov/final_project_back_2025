@@ -1,51 +1,64 @@
 package com.example.step_project_beck_spring.service;
 
+import com.example.step_project_beck_spring.dto.UpdateUserRequest;
 import com.example.step_project_beck_spring.dto.UserPublicDTO;
-import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
-import java.util.NoSuchElementException;
 
-/** Реалізація логіки для користувачів */
+import java.util.NoSuchElementException;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    /** Ввод репозиторію для доступу до БД */
     private final UserRepository userRepository;
 
     @Override
     public UserPublicDTO getUserById(UUID id) {
-        /** Шукаємо користувача якщо об'єкт порожній, кидаємо нот фаунд */
-        User user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with id: " + id));
-        return convertToPublicDTO(user);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("User not found with id: " + id));
+        return convertToDTO(user);
     }
+
     @Override
     public UserPublicDTO getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new NoSuchElementException("User not found with email: " + email));
-        return convertToPublicDTO(user);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("User not found with email: " + email));
+        return convertToDTO(user);
     }
 
-    /** конвертація User Entity в UserPublicDTO */
-    private UserPublicDTO convertToPublicDTO(User user) {
-        UserPublicDTO dto = new UserPublicDTO();
+    @Override
+    public void updateProfile(UpdateUserRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        /** відображення базових полів */
-        dto.setId(user.getId());
-        dto.setFirstName(user.getFirstName());
-        dto.setLastName(user.getLastName());
-        dto.setAvatarUrl(user.getAvatarUrl());
-        /** не працює без БД */
-        //dto.setBackgroundImg(user.getBackgroundImg());
+        if (request.firstName() != null) user.setFirstName(request.firstName());
+        if (request.lastName() != null) user.setLastName(request.lastName());
+        if (request.avatarUrl() != null) user.setAvatarUrl(request.avatarUrl());
+        if (request.backgroundImgUrl() != null) user.setBackgroundImgUrl(request.backgroundImgUrl());
+        if (request.birthDate() != null) user.setBirthDate(request.birthDate());
 
-        /** лічильники, далі потрібно зробити логіку для підрахуноку в БД: підпісників,підписок,постів */
-        dto.setFollowersCount(0);
-        dto.setFollowingCount(0);
-        dto.setPostsCount(0);
-        /** не працює без БД */
-        //dto.setIsFollowing(false);
-        return dto;
+        userRepository.save(user);
+    }
+
+    // РУЧНИЙ МАПІНГ строго 9 полів як у DTO
+    private UserPublicDTO convertToDTO(User user) {
+        return new UserPublicDTO(
+                user.getId(),                 // id
+                user.getFirstName(),          // firstName
+                user.getLastName(),           // lastName
+                user.getEmail(),              // Email
+                user.getAvatarUrl(),          // avatarUrl
+                user.getBackgroundImgUrl(),   // backgroundImg (у DTO поле називається так у Entity - Url)
+                0,                            // followingCount (поки що 0)
+                0,                            // followersCount (поки що 0)
+                0,                            // postsCount (поки що 0)
+                false                         // isFollowing (поки що false)
+        );
     }
 }

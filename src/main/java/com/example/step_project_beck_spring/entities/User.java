@@ -46,6 +46,8 @@ public class User implements UserDetails {
     private String backgroundImgUrl;         // Фото обкладинки профілю
 
     private boolean emailVerified = false;   // Користувач не може увійти, поки не підтвердить email
+    @Column(length = 64)
+    private String verificationCode;         // Тимчасовий код для підтвердження
     private String googleId;                 // Для входу через Google OAuth (поки не реалізуємо! якщо буде час!!!)
 
     @CreationTimestamp

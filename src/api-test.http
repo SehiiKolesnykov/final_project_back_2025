@@ -1,0 +1,52 @@
+### 1. РЕЄСТРАЦІЯ
+POST http://localhost:9000/api/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Alex",
+  "lastName": "Dev",
+  "email": "mytest@gmail.com",
+  "password": "password123",
+  "birthDate": "2000-01-01"
+}
+
+### 2. ПІДТВЕРДЖЕННЯ (Вставте сюди код з пошти/консолі замість 123456)
+POST http://localhost:9000/api/auth/verify
+Content-Type: application/json
+
+{
+  "email": "mytest@gmail.com",
+  "verificationCode": "123456"
+}
+
+> {%
+    // Цей скрипт автоматично збереже токен, щоб не копіювати його вручну!
+    client.global.set("auth_token", response.body.token);
+%}
+
+### 3. ВХІД (Login)
+POST http://localhost:9000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "mytest@gmail.com",
+  "password": "password123",
+  "rememberMe": true
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+%}
+
+### 4. ХТО Я? (Використовує збережений токен)
+GET http://localhost:9000/api/user/me
+Authorization: Bearer {{auth_token}}
+
+### 5. ОНОВИТИ ПРОФІЛЬ
+PATCH http://localhost:9000/api/user/update
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "firstName": "Super Alex"
+}
