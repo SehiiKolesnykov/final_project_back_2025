@@ -1,6 +1,7 @@
 package com.example.step_project_beck_spring.config;
 
 import com.example.step_project_beck_spring.filter.JwtAuthenticationFilter;
+import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,54 +25,47 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Головна конфігурація Spring Security.
- */
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor // Автоматично створить конструктор для полів final
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final UserRepository userRepository;
 
-    // Spring знайде будь-який клас UserDetailsService
-    private final UserDetailsService userDetailsService;
-
-    /**
-     * Основний ланцюжок фільтрів безпеки.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // Новий синтаксис для вимкнення CSRF
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Доступ без токена
+                        .requestMatchers("/", "/index.html", "/login.html", "/chat.html", "/*.html", "/*.css", "/*.js").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // Доступ тільки з токеном
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/upload/**").authenticated()
                         .requestMatchers("/api/user/**").authenticated()
+                        .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                //провайдер щоб Spring знав як перевіряти паролі
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * Провайдер автентифікації.
-     * Він з'єднує UserDetailsService (пошук юзера) та PasswordEncoder (перевірка пароля).
-     */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());    // Вказуємо чим шифрувати пароль
+        UserDetailsService myUserDetailsService = username -> userRepository.findByEmail(username)
+                .map(user -> new org.springframework.security.core.userdetails.User(
+                        user.getEmail(),
+                        user.getPassword(),
+                        java.util.Collections.emptyList()
+                ))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(myUserDetailsService);
+        // Енкодер через сеттер
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 

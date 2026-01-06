@@ -2,77 +2,86 @@ package com.example.step_project_beck_spring.controller;
 
 import com.example.step_project_beck_spring.dto.UpdateUserRequest;
 import com.example.step_project_beck_spring.dto.UserPublicDTO;
+import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-/** REST-контролер для управління користувачами.
- * Дозволяє шукати інших користувачів та керувати власним профілем.
- */
 @RestController
 @RequestMapping("/api/user")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    // ================== ПУБЛІЧНІ МЕТОДИ (ПОШУК ІНШИХ) ==================
-    /**
-     * GET /api/user/{id}
-     */
+    // ПУБЛІЧНІ МЕТОДИ (Пошук)
+    @GetMapping
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<UserPublicDTO>> getAllUsers() {
+        List<UserPublicDTO> users = userRepository.findAll().stream()
+                .map(this::mapToPublicDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/search")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<UserPublicDTO>> searchUsers(@RequestParam String q) {
+        if (q == null || q.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<User> foundUsers = userRepository.findAll().stream()
+                .filter(u -> (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(q.toLowerCase())) ||
+                        (u.getLastName() != null && u.getLastName().toLowerCase().contains(q.toLowerCase())))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(foundUsers.stream().map(this::mapToPublicDTO).collect(Collectors.toList()));
+    }
+
+    // ВАШІ МЕТОДИ (Профіль)
     @GetMapping("/{id}")
     public ResponseEntity<UserPublicDTO> getUserById(@PathVariable UUID id) {
         try {
-            UserPublicDTO user = userService.getUserById(id);
-            return ResponseEntity.ok(user); // 200 OK
+            return ResponseEntity.ok(userService.getUserById(id));
         } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build(); // 404 Not Found
+            return ResponseEntity.notFound().build();
         }
     }
 
-    /**
-     * GET /api/user/by-email?email=test@example.com
-     */
-    @GetMapping("/by-email")
-    public ResponseEntity<UserPublicDTO> getUserByEmail(@RequestParam String email) {
-        try {
-            UserPublicDTO user = userService.getUserByEmail(email);
-            return ResponseEntity.ok(user); // 200 OK
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build(); // 404 Not Found
-        }
-    }
-
-    // ================== ОСОБИСТІ МЕТОДИ (МIЙ ПРОФІЛЬ) ==================
-
-    /**
-     * GET /api/user/me
-     * Отримує профіль ТОГО, ХТО ЗАРАЗ ЗАЛОГІНЕНИЙ.
-     * Не потребує ID, бо бере його з токена.
-     */
     @GetMapping("/me")
     public ResponseEntity<UserPublicDTO> getCurrentUser() {
-        // Spring Security дістає email із JWT токена автоматично
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // Використовуємо існуючий сервіс, щоб отримати DTO
-        UserPublicDTO myProfile = userService.getUserByEmail(email);
-        return ResponseEntity.ok(myProfile);
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
-    /**
-     * PATCH /api/user/update
-     * Оновлює дані поточного користувача (ім'я, фото і т.д.).
-     * Приймає тільки ті поля, які треба змінити.
-     */
     @PatchMapping("/update")
     public ResponseEntity<String> updateProfile(@RequestBody UpdateUserRequest request) {
         userService.updateProfile(request);
-        return ResponseEntity.ok("Profile updated successfully / Профіль оновлено");
+        return ResponseEntity.ok("Profile updated successfully");
+    }
+
+    private UserPublicDTO mapToPublicDTO(User user) {
+        UserPublicDTO dto = new UserPublicDTO();
+        dto.setId(user.getId());
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setAvatarUrl(user.getAvatarUrl());
+        dto.setBackgroundImg(user.getBackgroundImgUrl());
+        dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
+        dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
+        dto.setPostsCount(user.getPosts() != null ? user.getPosts().size() : 0);
+        dto.setFollowing(false);
+        return dto;
     }
 }
