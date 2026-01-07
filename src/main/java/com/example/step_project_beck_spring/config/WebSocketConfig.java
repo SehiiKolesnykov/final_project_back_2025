@@ -21,11 +21,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     //Налаштовуємо брокер повідомлень.
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic"); // Куди ми будемо слати повідомлення
-        registry.setApplicationDestinationPrefixes("/app"); // Префікс для повідомлень з клієнта (якщо треба)
-        registry.setUserDestinationPrefix("/user"); // Для user-specific каналів
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic"); // Куди ми будемо слати повідомлення
+        config.setApplicationDestinationPrefixes("/app"); // Префікс для повідомлень з клієнта (якщо треба)
+        config.setUserDestinationPrefix("/user"); // Для user-specific каналів
     }
 }
-
 

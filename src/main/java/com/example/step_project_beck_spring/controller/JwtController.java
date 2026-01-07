@@ -1,59 +1,88 @@
 package com.example.step_project_beck_spring.controller;
 
 import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
+import com.example.step_project_beck_spring.dto.RegisterRequest;
 import com.example.step_project_beck_spring.service.JwtService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class JwtController {
 
-    // AuthenticationManager — для перевірки логіну/паролю
     private final AuthenticationManager authenticationManager;
-
-    // JwtService — наш сервіс для генерації та перевірки JWT токенів
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public JwtController(AuthenticationManager authenticationManager, JwtService jwtService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest request) {
+        try {
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "User with this email already exists"));
+            }
+
+            User user = new User();
+            user.setEmail(request.getEmail());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setEmailVerified(true);
+            userRepository.save(user);
+
+            // Генеруємо токен
+            String token = jwtService.generateToken(user, false);
+            return ResponseEntity.ok(new AuthResponse(token));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Registration failed: " + e.getMessage()));
+        }
+    }
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            User user = (User) auth.getPrincipal();
+            String token = jwtService.generateToken(user, request.isRememberMe());
+            return ResponseEntity.ok(new AuthResponse(token));
+
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Invalid email or password"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Login failed: " + e.getMessage()));
+        }
     }
 
-    /**
-     * Приймає LoginRequest (email, пароль, rememberMe).
-     * Спочатку перевіряєо логін/пароль через AuthenticationManager.
-     *  Якщо успішно то отримує User із контексту.
-     *  Генерує JWT токен (на 6 годин або 7 днів, залежно від rememberMe).
-     *   Повертає AuthResponse із токеном клієнту.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody @Valid LoginRequest request) {
-        // Перевірка логіну/паролю
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage())
         );
-
-        // Якщо успішно — отримуємо користувача
-        User user = (User) auth.getPrincipal();
-
-        // Генеруємо токен із потрібним часом життя
-        String token = jwtService.generateToken(user, request.isRememberMe());
-
-        // Відправляємо клієнту токен у відповіді
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 }
-
-
-
-

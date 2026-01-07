@@ -1,36 +1,52 @@
-spring:
-  # ─────────────────────── POSTGRESQL (Neon) ───────────────────────
-  datasource:
-    url: jdbc:postgresql://ep-ancient-band-adea5qk2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-    driver-class-name: org.postgresql.Driver
-    username: neondb_owner
-    password: npg_uteRxP3B8Oor
-
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: validate            # створює/оновлює таблиці автоматично
-    show-sql: true                # SQL-запити в консолі
-    properties:
-      hibernate:
-        format_sql: true          # гарний вивід SQL
-        use_sql_comments: true    # коментарі в SQL
-
-  # ─────────────────────── LOGGING (щоб бачити запити) ───────────────────────
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE   # показує значення параметрів ? в запитах
-    com.example.step_project_beck_spring: DEBUG
-
-# ─────────────────────── SERVER ──────────────────────
 server:
-  port: 8080
+  port: 9000
 
-# ─────────────────────── CLOUDINARY - image upload ──────────────────────
-
+# ─────────────────────── CLOUDINARY ──────────────────────
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 
+# ─────────────────────── SPRING CONFIG ──────────────────────
+spring:
+  application:
+    name: Step_project_beck_spring
+
+  # Налаштування бази даних
+  datasource:
+    url: ${DB_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  # Налаштування Hibernate
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Налаштування пошти
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# ─────────────────────── LOGGING ───────────────────────
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.example.step_project_beck_spring: DEBUG

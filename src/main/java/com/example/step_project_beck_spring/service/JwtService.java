@@ -68,10 +68,15 @@ public class JwtService {
 
     // Парсить токен і повертає всі claims (з перевіркою підпису)
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(secretKey)           // старий метод, бо нова версія JJWT 0.12+ ламає сумісність
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parser()
+                    .setSigningKey(secretKey)           // старий метод, бо нова версія JJWT 0.12+ ламає сумісність
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            // Якщо токен невалідний (прострочений, неправильний підпис тощо) - кидаємо помилку
+            throw new RuntimeException("Invalid JWT token: " + e.getMessage(), e);
+        }
     }
 
     /** Витягує email (email) з токена */
@@ -88,10 +93,22 @@ public class JwtService {
      * Перевіряє валідність токена:
      * - чи збігається email
      * - чи не прострочений
+     * - чи правильний підпис
      */
     public boolean validateToken(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        try {
+            // Спочатку перевіряємо, чи токен не прострочений та чи правильний підпис
+            if (isTokenExpired(token)) {
+                return false;
+            }
+            
+            // Перевіряємо, чи збігається email
+            String username = extractUsername(token);
+            return username != null && username.equals(userDetails.getUsername());
+        } catch (Exception e) {
+            // Якщо є будь-яка помилка при парсингу токену - він невалідний
+            return false;
+        }
     }
 
     /** Чи закінчився термін дії токена */
