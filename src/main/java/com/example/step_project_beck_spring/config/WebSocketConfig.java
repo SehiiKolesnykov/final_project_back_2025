@@ -6,25 +6,25 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+//Конфігурація WebSocket для пуш-нотифікацій.
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-
-        config.enableSimpleBroker("/topic");
-        
-
-        config.setApplicationDestinationPrefixes("/app");
-    }
-
+    //Реєструємо STOMP endpoint, до якого буде підключатися фронтенд.
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-
-        registry.addEndpoint("/ws")
+        registry.addEndpoint("/ws")           // Напр. ws://host/ws
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
+    }
+
+    //Налаштовуємо брокер повідомлень.
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic"); // Куди ми будемо слати повідомлення
+        config.setApplicationDestinationPrefixes("/app"); // Префікс для повідомлень з клієнта (якщо треба)
+        config.setUserDestinationPrefix("/user"); // Для user-specific каналів
     }
 }
 
