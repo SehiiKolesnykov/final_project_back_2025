@@ -1,5 +1,6 @@
 package com.example.step_project_beck_spring.service;
 
+import com.example.step_project_beck_spring.request.RegisterRequest;
 import com.example.step_project_beck_spring.dto.*;
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
