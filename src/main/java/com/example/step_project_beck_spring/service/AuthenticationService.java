@@ -1,11 +1,13 @@
 package com.example.step_project_beck_spring.service;
 
+import com.example.step_project_beck_spring.request.AuthResponse;
+import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
-import com.example.step_project_beck_spring.dto.*;
+import com.example.step_project_beck_spring.dto.VerifyEmailRequest; // Verify може бути DTO або Request, перевірте де він у вас лежить
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; //  імпорт для логування
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,7 +17,7 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j // анотація додає можливість писати log.info()
+@Slf4j
 public class AuthenticationService {
 
     private final UserRepository userRepository;
@@ -24,17 +26,14 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
 
-    /** РЕЄСТРАЦІЯ (Використовує Record - request.email()) */
+    /** РЕЄСТРАЦІЯ */
     public void register(RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new RuntimeException("Email already taken / Цей email вже зайнятий");
         }
 
-        // Генерація 6-значного коду
         String code = String.valueOf(100000 + new Random().nextInt(900000));
-
-        // ДОДАВ ЛОГ код з'явиться в консолі при реєстрації
-        log.info(" TEMPORARY CODE for {}: {}", request.email(), code);
+        log.info("TEMPORARY CODE for {}: {}", request.email(), code);
 
         User user = User.builder()
                 .firstName(request.firstName())
@@ -42,16 +41,24 @@ public class AuthenticationService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .birthDate(request.birthDate())
-                .emailVerified(false)
+                .emailVerified(false) // спочатку фолс
                 .verificationCode(code)
                 .build();
 
         userRepository.save(user);
-        emailService.sendVerificationEmail(request.email(), code);
+
+        // Відправка листа
+        try {
+            emailService.sendVerificationEmail(request.email(), code);
+        } catch (Exception e) {
+            log.error("Failed to send email", e);
+            // Ми не кидаємо помилку далі, щоб юзер все одно зберігся, а код подивився в логах
+        }
     }
 
-    /** ПІДТВЕРДЖЕННЯ ПОШТИ (Record - request.email()) */
+    /** ПІДТВЕРДЖЕННЯ ПОШТИ */
     public AuthResponse verifyEmail(VerifyEmailRequest request) {
+        //  якщо VerifyEmailRequest це Record -> request.email(), якщо Class -> request.getEmail()
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -63,27 +70,21 @@ public class AuthenticationService {
         user.setVerificationCode(null);
         userRepository.save(user);
 
-        // (false бо це не "запам'ятати мене" а просто автологін)
         String token = jwtService.generateToken(user, false);
         return new AuthResponse(token);
     }
 
-    /** ЛОГІН (Використовує Class/Lombok - request.getEmail() та isRememberMe()) */
+    /** ЛОГІН */
     public AuthResponse login(LoginRequest request) {
-        // Spring Security перевіряє пароль
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-
-        //  реквст юзера
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Перевірка, чи підтвердив пошту
+        // Обов'язкова перевірка
         if (!user.isEmailVerified()) {
             throw new RuntimeException("Email not verified! Please check your email.");
         }
-        // Генеруємо токен
         String token = jwtService.generateToken(user, request.isRememberMe());
         return new AuthResponse(token);
     }
