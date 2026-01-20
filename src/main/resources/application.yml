@@ -32,17 +32,25 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   # Налаштування пошти
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  spring:
+    mail:
+      host: ${MAIL_HOST:smtp.gmail.com}
+      port: ${MAIL_PORT:465}
+      username: ${MAIL_USERNAME}
+      password: ${MAIL_PASSWORD}
+      protocol: smtps
+      properties:
+        mail:
+          transport:
+            protocol: smtps
+          smtp:
+            auth: true
+            starttls:
+              enable: true
+              required: true
+            ssl:
+              enable: true      # Вмикаємо SSL
+              trust: "*"
 
   # Jwt Settings
 jwt:
