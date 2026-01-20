@@ -3,6 +3,7 @@ package com.example.step_project_beck_spring.controller;
 import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
+import com.example.step_project_beck_spring.dto.VerifyEmailRequest;
 import com.example.step_project_beck_spring.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,15 @@ public class JwtController {
             return ResponseEntity.ok(Map.of("message", "Registration successful. Please check your email for verification code."));
 
         } catch (RuntimeException e) {
-            // Обробка помилок (наприклад, email зайнятий)
+            // Обробка помилок
+
+            // Перевірка для фронтенду щоб була саме 409 помилка
+            String message = e.getMessage().toLowerCase();
+            if (message.contains("taken") || message.contains("зайнятий") || message.contains("exists")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", e.getMessage()));
+            }
+
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -60,8 +69,13 @@ public class JwtController {
 
     // цей метод щоб Postman міг відправити код
     @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestBody com.example.step_project_beck_spring.dto.VerifyEmailRequest request) {
-        return ResponseEntity.ok(authenticationService.verifyEmail(request));
+    public ResponseEntity<?> verify(@RequestBody VerifyEmailRequest request) {
+        try {
+            return ResponseEntity.ok(authenticationService.verifyEmail(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

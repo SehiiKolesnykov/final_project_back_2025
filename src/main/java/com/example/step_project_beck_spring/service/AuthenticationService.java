@@ -3,7 +3,7 @@ package com.example.step_project_beck_spring.service;
 import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
-import com.example.step_project_beck_spring.dto.VerifyEmailRequest; // Verify може бути DTO або Request, перевірте де він у вас лежить
+import com.example.step_project_beck_spring.dto.VerifyEmailRequest;
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Random;
 
@@ -27,6 +28,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     /** РЕЄСТРАЦІЯ */
+    @Transactional // Якщо пошта не відправиться, юзер не збережеться в БД
     public void register(RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new RuntimeException("Email already taken / Цей email вже зайнятий");
@@ -41,24 +43,19 @@ public class AuthenticationService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .birthDate(request.birthDate())
-                .emailVerified(false) // спочатку фолс
+                .emailVerified(false)
                 .verificationCode(code)
                 .build();
 
         userRepository.save(user);
 
-        // Відправка листа
-        try {
-            emailService.sendVerificationEmail(request.email(), code);
-        } catch (Exception e) {
-            log.error("Failed to send email", e);
-            // Ми не кидаємо помилку далі, щоб юзер все одно зберігся, а код подивився в логах
-        }
+        // Прибрав try-catch.
+        // Тепер якщо тут виникне помилка (немає SMTP) транзакція відкотить save(user).
+        emailService.sendVerificationEmail(request.email(), code);
     }
 
     /** ПІДТВЕРДЖЕННЯ ПОШТИ */
     public AuthResponse verifyEmail(VerifyEmailRequest request) {
-        //  якщо VerifyEmailRequest це Record -> request.email(), якщо Class -> request.getEmail()
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -81,10 +78,12 @@ public class AuthenticationService {
         );
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
         // Обов'язкова перевірка
         if (!user.isEmailVerified()) {
             throw new RuntimeException("Email not verified! Please check your email.");
         }
+
         String token = jwtService.generateToken(user, request.isRememberMe());
         return new AuthResponse(token);
     }
