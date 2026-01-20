@@ -40,15 +40,15 @@ public class LikeService {
 
         // Пошук існуючого лайку від цього користувача для цього поста
         var existing = likeRepository.findByUserAndPost(user, post);
+
+        // Чи новий лайк
+        boolean nowLiked;
+
+
         if (existing.isPresent()) {
             // Якщо лайк є то видаляю
             likeRepository.delete(existing.get());
-            return LikeDto.builder()
-                    .postId(postId)
-                    .userId(userId)
-                    .liked(false) // тепер лайку немає
-                    .totalLikes(likeRepository.countByPost(post)) // актуальна кількість лайків
-                    .build();
+            nowLiked = false;
         } else {
             // Якщо лайку нема то створюємо новий
             Like like = Like.builder()
@@ -56,13 +56,20 @@ public class LikeService {
                     .user(user)
                     .build();
             likeRepository.save(like);
-            return LikeDto.builder()
-                    .postId(postId)
-                    .userId(userId)
-                    .liked(true)
-                    .totalLikes(likeRepository.countByPost(post)) // актуальна кількість лайків
-                    .build();
+            nowLiked = true;
         }
+
+        // Оновлюємо каунтер через приватний метод
+        updatePostLikesCount(post);
+
+        long currentCount = post.getLikesCount();  // вже оновлене значення
+
+        return LikeDto.builder()
+                .postId(postId)
+                .userId(userId)
+                .liked(nowLiked)
+                .totalLikes(currentCount)
+                .build();
     }
 
     /**
@@ -75,6 +82,15 @@ public class LikeService {
                 .orElseThrow(() -> new PostNotFoundException(postId));
         // Повертаємо кількість лайків
         return likeRepository.countByPost(post);
+    }
+
+    /**
+     *  метод для оновлення каунтера поста
+     */
+    private void updatePostLikesCount(Post post) {
+        long newCount = likeRepository.countByPost(post);
+        post.setLikesCount((int) newCount);
+        postRepository.save(post);
     }
 }
 
