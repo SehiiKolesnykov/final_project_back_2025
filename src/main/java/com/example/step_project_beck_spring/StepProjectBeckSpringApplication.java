@@ -1,5 +1,6 @@
 package com.example.step_project_beck_spring;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.persistence.autoconfigure.EntityScan;
@@ -22,16 +23,16 @@ public class StepProjectBeckSpringApplication {
 
         // Налаштування та завантаження .env-файлу
         // Розкоментувати для локальної розробки
-//        Dotenv dotenv = Dotenv.configure()
-//                .directory("./")           // шукати .env у корені проєкту (поруч з pom.xml/gradle)
-//                .ignoreIfMalformed()       // не падати, якщо в .env є некоректні рядки
-//                .ignoreIfMissing()         // не падати, якщо файлу .env взагалі немає (наприклад у проді)
-//                .load();                   // саме завантаження
-//
-//        // Копіюємо всі змінні з .env у System.properties — тепер Spring їх побачить через @Value("${...}")
-//        dotenv.entries().forEach(entry ->
-//                System.setProperty(entry.getKey(), entry.getValue())
-//        );
+        Dotenv dotenv = Dotenv.configure()
+                .directory("./")           // шукати .env у корені проєкту (поруч з pom.xml/gradle)
+                .ignoreIfMalformed()       // не падати, якщо в .env є некоректні рядки
+                .ignoreIfMissing()         // не падати, якщо файлу .env взагалі немає (наприклад у проді)
+                .load();                   // саме завантаження
+
+        // Копіюємо всі змінні з .env у System.properties — тепер Spring їх побачить через @Value("${...}")
+        dotenv.entries().forEach(entry ->
+                System.setProperty(entry.getKey(), entry.getValue())
+        );
 
         // Запускаємо Spring Boot додаток
         SpringApplication.run(StepProjectBeckSpringApplication.class, args);
