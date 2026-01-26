@@ -2,6 +2,7 @@ package com.example.step_project_beck_spring.config;
 
 import com.example.step_project_beck_spring.filter.JwtAuthenticationFilter;
 import com.example.step_project_beck_spring.repository.UserRepository;
+import com.example.step_project_beck_spring.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserRepository userRepository;
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -42,10 +46,18 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/login.html", "/chat.html", "/*.html", "/*.css", "/*.js").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/login/oauth2/**").permitAll() // Дозволяємо OAuth2 ендпоінти
                         .requestMatchers("/api/upload/**").authenticated()
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
                         .anyRequest().authenticated()
+                )
+                // блок налаштування OAuth2
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService) // Підключаємо сервіс
+                        )
+                        .successHandler(oAuth2LoginSuccessHandler) // Підключаємо хендлер успіху
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -53,7 +65,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
     @Bean
     public AuthenticationProvider authenticationProvider() {
         UserDetailsService myUserDetailsService = username -> userRepository.findByEmail(username)
@@ -64,7 +75,6 @@ public class SecurityConfig {
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(myUserDetailsService);
-        // Енкодер через сеттер
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
