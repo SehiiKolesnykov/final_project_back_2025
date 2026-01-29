@@ -24,7 +24,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final UserRepository userRepository;
 
     // Адреса фронтенду (краще винести в properties)
-    private final String frontendUrl = "http://localhost:5173/oauth2/callback";
+    @Value("${application.frontend-url}")
+    private String frontendBaseUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -43,7 +44,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String jwtToken = jwtService.generateToken(user, true);
 
         // Формуємо посилання на фронтенд і додаємо токен як параметр
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl)
+        // Додаємо шлях /oauth2/callback до базового URL
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendBaseUrl + "/oauth2/callback")
                 .queryParam("token", jwtToken)
                 .build().toUriString();
         // Перенаправляємо користувача на це посилання
