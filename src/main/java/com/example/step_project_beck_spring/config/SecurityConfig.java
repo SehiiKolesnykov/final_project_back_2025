@@ -46,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/login.html", "/chat.html", "/*.html", "/*.css", "/*.js").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/login/oauth2/**").permitAll() // Дозволяємо OAuth2 ендпоінти
+                        .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
                         .requestMatchers("/api/upload/**").authenticated()
                         .requestMatchers("/api/user/**").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
