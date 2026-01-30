@@ -58,6 +58,9 @@ public class SecurityConfig {
                                 .userService(customOAuth2UserService) // Підключаємо сервіс
                         )
                         .successHandler(oAuth2LoginSuccessHandler) // Підключаємо хендлер успіху
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/login/oauth2/code/*")
+                        )
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
