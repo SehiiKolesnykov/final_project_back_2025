@@ -85,4 +85,4 @@ logging:
 
 resend:
   api-key: ${RESEND_API_KEY}
-  from-email: "step-project@proton.me"
+  from-email: "onboarding@resend.dev"
