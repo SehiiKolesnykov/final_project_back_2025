@@ -62,9 +62,6 @@ security:
             - email
             - profile
           redirect-uri: "{baseUrl}/login/oauth2/code/google"   # ← це критично!
-      provider:
-        google:
-          user-name-attribute: email
   # Local host front
 application:
   frontend-url: ${FRONTEND_URL:http://localhost:5173} #Локально це буде localhost:5173, а на Render ми змінимо це через змінні середовища
@@ -80,6 +77,9 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     com.example.step_project_beck_spring: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.boot.autoconfigure.security: DEBUG
+    org.springframework.boot.autoconfigure.security.oauth2: DEBUG
 
 # ─────────────────────── RESEND ───────────────────────
 
