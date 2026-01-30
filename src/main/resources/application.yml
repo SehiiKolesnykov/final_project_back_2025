@@ -83,6 +83,6 @@ logging:
 
 # ─────────────────────── RESEND ───────────────────────
 
-resend:
-  api-key: ${RESEND_API_KEY}
-  from-email: "onboarding@resend.dev"
+brevo:
+  api-key: ${BREVO_API_KEY}
+  from-email: step-project@proton.me
