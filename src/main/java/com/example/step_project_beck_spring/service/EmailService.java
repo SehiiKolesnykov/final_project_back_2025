@@ -1,35 +1,33 @@
 package com.example.step_project_beck_spring.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;  // ← це правильний клас!
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j // Log (щоб бачити в консолі, що лист пішов)
+@Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${resend.api-key}")
+    private String apiKey;
 
-    @Value("${spring.mail.username}")
+    @Value("${resend.from-email}")
     private String fromEmail;
 
-    /** Відправляє код підтвердження, зробив HTML бо гарніше виглядає */
+    /**
+     * Відправляє email з кодом підтвердження через Resend API.
+     */
     public void sendVerificationEmail(String toEmail, String code) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            Resend resend = new Resend(apiKey);
 
-            helper.setFrom(fromEmail);
-            helper.setTo(toEmail);
-            helper.setSubject("Підтвердження реєстрації");
-
-            // HTML шаблон листа
+            // Той самий красивий HTML-шаблон
             String htmlContent = """
                 <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
                     <h2 style="color: #2c3e50;">Вітаємо у Step Project!</h2>
@@ -39,13 +37,31 @@ public class EmailService {
                 </div>
                 """.formatted(code);
 
-            helper.setText(htmlContent, true);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from(fromEmail)  // Рекомендую формат: "Step Project <noreply@yourdomain.com>"
+                    .to(toEmail)
+                    .subject("Підтвердження реєстрації")
+                    .html(htmlContent)
+                    .build();
 
-            mailSender.send(message);
-            log.info("Verification email sent to: {}", toEmail);
+            // Відправка та отримання відповіді
+            CreateEmailResponse response = resend.emails().send(params);
 
-        } catch (MessagingException e) {
-            log.error("Failed to send email", e);
+            // response.getId() — це string, наприклад "26abdd24-..."
+            if (response.getId() != null && !response.getId().isEmpty()) {
+                log.info("Verification email sent to: {} via Resend. Email ID: {}", toEmail, response.getId());
+            } else {
+                log.warn("Resend returned empty ID for email to {}", toEmail);
+                // все одно вважаємо успішним, бо помилки кидаються винятком
+            }
+
+        } catch (ResendException e) {
+            // ResendException містить код помилки та повідомлення від API
+            log.error("Resend API error sending to {}: {} (code: {})",
+                    toEmail, e.getMessage(), e.getStatusCode(), e);
+            throw new RuntimeException("Не вдалося відправити email через Resend: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending email to {}", toEmail, e);
             throw new RuntimeException("Не вдалося відправити email", e);
         }
     }
