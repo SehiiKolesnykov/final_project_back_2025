@@ -6,8 +6,7 @@ Beck Spring API - це RESTful веб-сервіс для соціальної �
 
 ## Base URL
 
-- **Development**: `http://localhost:9000`
-- **Production**: 
+- **Production**: `https://step-project-api.onrender.com`
 
 ## Authentication
 

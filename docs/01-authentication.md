@@ -2,7 +2,9 @@
 
 ## POST /api/auth/register
 
-Реєстрація нового користувача. Надсилає email з кодом верифікації.
+Реєстрація нового користувача через Firebase Authentication (email + password).  
+Після успішної реєстрації користувач одразу вважається верифікованим і отримує 
+JWT у HttpOnly cookie.
 
 ### Request Body
 
@@ -30,14 +32,24 @@
 
 **Status**: `200 OK`
 
-**Body**: Пусте (код верифікації надіслано на email)
-
+**Body**: ```{
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}```
+**Cookie**:
+```
+jwt=<token>
+HttpOnly: true
+Secure: true
+SameSite: Lax
+Path: /
+Max-Age: 21600 (6 годин, якщо rememberMe не використовується при реєстрації)
+```
 ### Error Responses
 
 **409 Conflict** - користувач з таким email вже існує:
 ```json
 {
-  "error": "User with this email already exists"
+  "error": "Email already taken / Цей email вже зайнятий"
 }
 ```
 
@@ -50,51 +62,10 @@
 
 ---
 
-## POST /api/auth/verify
-
-Верифікація email за допомогою коду та автоматичний вхід (повертає JWT).
-
-### Request Body
-
-| Поле | Тип | Обов'язкове | Опис |
-|------|-----|-------------|------|
-| email* | string | Так | Email користувача |
-| verificationCode* | string | Так | 6-значний код верифікації |
-
-### Example Request
-
-```json
-{
-  "email": "john.doe@example.com",
-  "verificationCode": "123456"
-}
-```
-
-### Response
-
-**Status**: `200 OK`
-
-**Body**:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Error Responses
-
-**400 Bad Request** - невалідний код:
-```json
-{
-  "error": "Invalid verification code"
-}
-```
-
----
-
 ## POST /api/auth/login
 
-Вхід в систему з email та паролем. Повертає JWT токен.
+Вхід через Firebase Authentication (email + password).
+Повертає JWT у HttpOnly cookie.
 
 ### Request Body
 
@@ -143,31 +114,7 @@
 
 ---
 
-## GET /api/auth/test-login
-
-**Тільки для розробки!** Автоматичний вхід як тестовий користувач з встановленням JWT у HttpOnly cookie.
-
-### Request Body
-
-Немає
-
-### Response
-
-**Status**: `200 OK`
-
-**Body** (plain text):
-```
-Test user logged in. JWT cookie set.
-```
-
-**Cookie**:
-```
-jwt=<token>; HttpOnly; Secure=false; SameSite=None; Max-Age=604800
-```
-
 ### Примітки
-
-- Використовується тільки в режимі розробки
 - Cookie діє 7 днів (604800 секунд)
 - Встановлює JWT токен напряму в HttpOnly cookie
 
