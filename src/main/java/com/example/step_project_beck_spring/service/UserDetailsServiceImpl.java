@@ -33,7 +33,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         
         System.out.println("✅ User found: " + user.getEmail());
         System.out.println("User ID: " + user.getId());
-        System.out.println("Email verified: " + user.isEmailVerified());
         System.out.println("Password hash: " + (user.getPassword() != null ? user.getPassword().substring(0, Math.min(20, user.getPassword().length())) + "..." : "null"));
         System.out.println("User enabled (isEnabled): " + user.isEnabled());
         
