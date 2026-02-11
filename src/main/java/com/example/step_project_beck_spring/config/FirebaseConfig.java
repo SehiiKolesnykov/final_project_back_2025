@@ -34,7 +34,7 @@ public class FirebaseConfig {
                 .build();
 
         // Якщо хочеш вказати явно ім'я апки (опціонально)
-        return FirebaseApp.initializeApp(options, "my-firebase-app");
+        return FirebaseApp.initializeApp(options);
         // або просто FirebaseApp.initializeApp(options);
     }
 
