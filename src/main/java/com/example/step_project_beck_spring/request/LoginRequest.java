@@ -1,3 +1,4 @@
+// src/main/java/com/example/step_project_beck_spring/request/LoginRequest.java
 package com.example.step_project_beck_spring.request;
 
 import jakarta.validation.constraints.NotBlank;
@@ -20,5 +21,3 @@ public class LoginRequest {
     public boolean isRememberMe() { return rememberMe; }
     public void setRememberMe(boolean rememberMe) { this.rememberMe = rememberMe; }
 }
-
-

@@ -14,99 +14,124 @@ import java.util.*;
 
 /**
  * Основна сутність користувача.
- * Реалізує UserDetails — тому Spring Security може використовувати її напряму для майбутньої автентифікації.
+ * Реалізує UserDetails для сумісності з Spring Security.
  */
 @Entity
 @Table(name = "users", indexes = {
-        @Index(name = "idx_user_email", columnList = "email", unique = true) // Прискорює пошук по email
+        @Index(name = "idx_user_email", columnList = "email", unique = true),
+        @Index(name = "idx_user_firebase_uid", columnList = "firebase_uid", unique = true)
 })
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-@ToString(exclude = {"password", "posts", "following", "followers", "likes", "savedPosts"}) // Не виводимо пароль і важкі колекції в логах
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString(exclude = {"posts", "following", "followers", "likes", "savedPosts", "notifications", "notifiedByUsers", "notifyingUsers"})
 @NullMarked
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;                         // ID користувача
+    private UUID id;
 
     @Column(nullable = false, length = 50)
-    private String firstName;                // Ім'я користувача
+    private String firstName;
 
     @Column(nullable = false, length = 50)
-    private String lastName;                 // Призвище користувача
+    private String lastName;
 
     @Column(nullable = false, unique = true, length = 100)
-    private String email;                    // Логін = email (як у сучасних соцмережах)
+    private String email;
 
-    @Column(nullable = false)
-    private String password;                 // Хешований BCrypt
+    // Поле password більше не потрібне при використанні Firebase Auth
+    // @Column(nullable = false) — видаляємо
+    // private String password;
 
-    private LocalDate birthDate;             // Дата народження користувача
-    private String avatarUrl;                // Фото профілю
-    private String backgroundImgUrl;         // Фото обкладинки профілю
+    private LocalDate birthDate;
 
-    private boolean emailVerified = false;   // Користувач не може увійти, поки не підтвердить email
-    @Column(length = 64)
-    private String verificationCode;         // Тимчасовий код для підтвердження
-    private String googleId;                 // Для входу через Google OAuth (поки не реалізуємо! якщо буде час!!!)
+    private String avatarUrl;
+    private String backgroundImgUrl;
+
+    // Firebase UID — головний ідентифікатор користувача з Firebase
+    @Column(name = "firebase_uid", unique = true, nullable = false)
+    private String firebaseUid;
+
+    // emailVerified більше не потрібне, бо Firebase сам керує верифікацією (або ми її вимкнули)
+    // private boolean emailVerified = false;
+    // private String verificationCode;
+
+    // private String googleId;  // можна залишити, якщо плануєте додати Google OAuth пізніше
 
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime createdAt;         // Таймштамп реєстрації
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updatedAt;         // Таймштамп
+    private LocalDateTime updatedAt;
 
     // ======================= ВІДНОШЕННЯ =======================
 
-    /** Пости, які створив цей користувач */
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt DESC")
     private List<Post> posts = new ArrayList<>();
 
-    /** На кого підписався цей користувач (я є follower) */
     @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Follow> following = new HashSet<>();
 
-    /** Хто підписався на цього користувача (я є following) */
     @OneToMany(mappedBy = "following", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Follow> followers = new HashSet<>();
 
-    /** Лайки, які поставив цей користувач */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Like> likes = new HashSet<>();
 
-    /** Пості, які користувач зберіг у "Обране" */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<SavedPost> savedPosts = new HashSet<>();
 
-    /** Сповіщення, які отримав користувач */
     @OneToMany(mappedBy = "recipient", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
 
-    /** Кому цей користувач увімкнув сповіщення про свої нові пости */
     @OneToMany(mappedBy = "targetUser", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<NotificationSubscription> notifiedByUsers = new HashSet<>();
 
-    /** На кого цей користувач підписався отримувати сповіщення */
     @OneToMany(mappedBy = "subscriber", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<NotificationSubscription> notifyingUsers = new HashSet<>();
 
-    // ======================= Spring Security =======================
+    // ======================= Spring Security methods =======================
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(); // Поки без ролей. Якщо буде час та бажання!!!
+        return List.of(); // без ролей поки що
     }
 
-    @Override public String getUsername() { return email; }
-    @Override public boolean isAccountNonExpired() { return true; }
-    @Override public boolean isAccountNonLocked() { return true; }
-    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override
+    public String getUsername() {
+        return email;
+    }
 
-    /** Важливо! Користувач може увійти тільки після підтвердження email (по завданню) */
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
     @Override
     public boolean isEnabled() {
-        return emailVerified;
+        // При Firebase Auth зазвичай завжди true, якщо користувач існує
+        // (Firebase вже не дозволяє логін, якщо акаунт заблокований/видалений)
+        return true;
+    }
+
+    @Override
+    public String getPassword() {
+        return null;
     }
 }

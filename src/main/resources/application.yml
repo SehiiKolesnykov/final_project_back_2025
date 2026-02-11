@@ -81,8 +81,7 @@ logging:
     org.springframework.boot.autoconfigure.security: DEBUG
     org.springframework.boot.autoconfigure.security.oauth2: DEBUG
 
-# ─────────────────────── RESEND ───────────────────────
+# ─────────────────────── FIREBASE ───────────────────────
 
-brevo:
-  api-key: ${BREVO_API_KEY}
-  from-email: step-project@proton.me
+firebase:
+  web-api-key: ${FIREBASE_API_KEY}

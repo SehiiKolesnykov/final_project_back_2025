@@ -1,20 +1,22 @@
+// src/main/java/com/example/step_project_beck_spring/service/AuthenticationService.java
 package com.example.step_project_beck_spring.service;
 
 import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
-import com.example.step_project_beck_spring.dto.VerifyEmailRequest;
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.UserRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Random;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,49 +24,39 @@ import java.util.Random;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final EmailService emailService;
-    private final AuthenticationManager authenticationManager;
+    private final RestTemplate restTemplate;
+
+    @Value("${firebase.web-api-key}")
+    private String firebaseWebApiKey;
 
     /** РЕЄСТРАЦІЯ */
-    @Transactional // Якщо пошта не відправиться, юзер не збережеться в БД
-    public void register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new RuntimeException("Email already taken / Цей email вже зайнятий");
         }
 
-        String code = String.valueOf(100000 + new Random().nextInt(900000));
-        log.info("TEMPORARY CODE for {}: {}", request.email(), code);
+        UserRecord.CreateRequest createRequest = new UserRecord.CreateRequest()
+                .setEmail(request.email())
+                .setPassword(request.password())
+                .setDisplayName(request.firstName() + " " + request.lastName())
+                .setEmailVerified(true); // Без перевірки email
+
+        UserRecord firebaseUser;
+        try {
+            firebaseUser = FirebaseAuth.getInstance().createUser(createRequest);
+        } catch (FirebaseAuthException e) {
+            throw new RuntimeException("Failed to create user in Firebase: " + e.getMessage());
+        }
 
         User user = User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
                 .birthDate(request.birthDate())
-                .emailVerified(false)
-                .verificationCode(code)
+                .firebaseUid(firebaseUser.getUid())
                 .build();
 
-        userRepository.save(user);
-
-        // Прибрав try-catch.
-        // Тепер якщо тут виникне помилка (немає SMTP) транзакція відкотить save(user).
-        emailService.sendVerificationEmail(request.email(), code);
-    }
-
-    /** ПІДТВЕРДЖЕННЯ ПОШТИ */
-    public AuthResponse verifyEmail(VerifyEmailRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (user.getVerificationCode() == null || !user.getVerificationCode().equals(request.verificationCode())) {
-            throw new RuntimeException("Invalid verification code / Невірний код");
-        }
-
-        user.setEmailVerified(true);
-        user.setVerificationCode(null);
         userRepository.save(user);
 
         String token = jwtService.generateToken(user, false);
@@ -73,16 +65,25 @@ public class AuthenticationService {
 
     /** ЛОГІН */
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Використовуємо REST API для signInWithPassword
+        String url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + firebaseWebApiKey;
 
-        // Обов'язкова перевірка
-        if (!user.isEmailVerified()) {
-            throw new RuntimeException("Email not verified! Please check your email.");
+        Map<String, Object> body = new HashMap<>();
+        body.put("email", request.getEmail());
+        body.put("password", request.getPassword());
+        body.put("returnSecureToken", true);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = restTemplate.postForObject(url, body, Map.class);
+
+        if (response == null || response.containsKey("error")) {
+            throw new RuntimeException("Invalid email or password / Невірний email або пароль");
         }
+
+        String uid = (String) response.get("localId");
+
+        User user = userRepository.findByFirebaseUid(uid)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtService.generateToken(user, request.isRememberMe());
         return new AuthResponse(token);

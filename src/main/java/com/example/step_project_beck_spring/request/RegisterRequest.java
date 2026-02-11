@@ -1,3 +1,4 @@
+// src/main/java/com/example/step_project_beck_spring/request/RegisterRequest.java
 package com.example.step_project_beck_spring.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat; // Для форматування дати
@@ -26,4 +27,3 @@ public record RegisterRequest(
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy")
         LocalDate birthDate
 ) {}
-

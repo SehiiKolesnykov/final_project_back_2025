@@ -1,9 +1,9 @@
+// src/main/java/com/example/step_project_beck_spring/controller/JwtController.java
 package com.example.step_project_beck_spring.controller;
 
 import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
-import com.example.step_project_beck_spring.dto.VerifyEmailRequest;
 import com.example.step_project_beck_spring.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,23 +30,9 @@ public class JwtController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest request) {
         try {
-            authenticationService.register(request);
-            return ResponseEntity.ok(Map.of("message", "Registration successful. Please check your email for verification code."));
-        } catch (RuntimeException e) {
-            String msg = e.getMessage().toLowerCase();
-            if (msg.contains("taken") || msg.contains("exists")) {
-                return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
-            }
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
+            AuthResponse authResponse = authenticationService.register(request);
 
-    @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestBody VerifyEmailRequest request) {
-        try {
-            AuthResponse authResponse = authenticationService.verifyEmail(request);
-
-            // Для verify — короткий термін (6 годин)
+            // Для register — короткий термін (6 годин)
             ResponseCookie jwtCookie = createJwtCookie(authResponse.token(), false);
 
             return ResponseEntity.ok()
@@ -54,6 +40,10 @@ public class JwtController {
                     .body(authResponse);
 
         } catch (RuntimeException e) {
+            String msg = e.getMessage().toLowerCase();
+            if (msg.contains("taken") || msg.contains("exists")) {
+                return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+            }
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

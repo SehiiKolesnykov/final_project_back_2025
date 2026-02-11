@@ -1,3 +1,4 @@
+// src/main/java/com/example/step_project_beck_spring/filter/JwtAuthenticationFilter.java
 package com.example.step_project_beck_spring.filter;
 
 import com.example.step_project_beck_spring.entities.User;
@@ -19,9 +20,7 @@ import java.io.IOException;
 /**
  * Головний JWT-фільтр.
  * Виконується при кожному запиті (один раз — тому extends OncePerRequestFilter).
- * Підтримує два способи передачі токена:
- * 1. Authorization: Bearer <token> (на релізі приберемо)
- * 2. HttpOnly-кука з назвою "jwt"
+ * Підтримує тільки HttpOnly-куку з назвою "jwt" (перевірка only cookie).
  *
  * Якщо токен валідний — автоматично "логінить" користувача в SecurityContext.
  */
@@ -58,14 +57,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = null;
 
-        // 1. Спочатку шукаємо токен у заголовку Authorization: Bearer ...
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7); // відрізаємо "Bearer "
-        }
-
-        // 2. Якщо в заголовку немає — шукаємо в куках (назва куки саме "jwt")
-        if (jwt == null && request.getCookies() != null) {
+        // Шукаємо тільки в куках (назва куки саме "jwt")
+        if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("jwt".equals(cookie.getName())) {
                     jwt = cookie.getValue();
