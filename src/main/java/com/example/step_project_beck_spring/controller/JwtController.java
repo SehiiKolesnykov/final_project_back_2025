@@ -70,7 +70,7 @@ public class JwtController {
         return ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(true)                    // HTTPS на Render
-                .sameSite("Lax")                 // Lax — безпечніше для SPA
+                .sameSite("None")
                 .path("/")
                 .maxAge(Duration.ofSeconds(maxAge))
                 .build();
