@@ -3,6 +3,10 @@ package com.example.step_project_beck_spring.controller;
 import com.example.step_project_beck_spring.dto.LikeDto;
 import com.example.step_project_beck_spring.request.LikeRequest;
 import com.example.step_project_beck_spring.service.LikeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/likes")
 @RequiredArgsConstructor
+@Tag(name = "Likes", description = "API для управління лайками на постах")
 public class LikeController {
 
     private final LikeService likeService;
@@ -23,6 +28,11 @@ public class LikeController {
      * Якщо ще не лайкнув  лайк додається.
      * Повертає DTO з інформацією про стан лайку та загальну кількість лайків.
      */
+    @Operation(summary = "Перемкнути лайк", description = "Додає або видаляє лайк на пості. Якщо лайк вже є - видаляє, якщо немає - додає")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Лайк успішно перемкнуто"),
+            @ApiResponse(responseCode = "404", description = "Пост не знайдено")
+    })
     @PostMapping("/{postId}")
     public ResponseEntity<LikeDto> toggleLike(
             @PathVariable UUID postId,
@@ -34,6 +44,8 @@ public class LikeController {
      * Метод для отримання кількості лайків конкретного поста.
      * Використовується для відображення статистики (наприклад, "цей пост має 15 лайків").
      */
+    @Operation(summary = "Отримати кількість лайків", description = "Повертає загальну кількість лайків на пості")
+    @ApiResponse(responseCode = "200", description = "Кількість лайків успішно отримано")
     @GetMapping("/{postId}/count")
     public ResponseEntity<Long> countLikes(@PathVariable UUID postId) {
         return ResponseEntity.ok(likeService.countLikes(postId));

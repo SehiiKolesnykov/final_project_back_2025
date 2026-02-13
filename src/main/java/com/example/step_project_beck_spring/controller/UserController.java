@@ -6,6 +6,10 @@ import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.service.CurrentUserService;
 import com.example.step_project_beck_spring.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +28,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "API для управління користувачами та профілями")
 public class UserController {
 
     private final UserService userService;
@@ -31,6 +36,8 @@ public class UserController {
     private final CurrentUserService currentUserService;
 
     /** GET /api/user - отримати всіх користувачів (виключає поточного) */
+    @Operation(summary = "Отримати всіх користувачів", description = "Повертає список всіх користувачів, виключаючи поточного авторизованого користувача")
+    @ApiResponse(responseCode = "200", description = "Список користувачів успішно отримано")
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserPublicDTO>> getAllUsers() {
@@ -63,6 +70,11 @@ public class UserController {
     }
 
     /** GET /api/user/search?q=query - пошук користувачів за ім'ям або email */
+    @Operation(summary = "Пошук користувачів", description = "Шукає користувачів за ім'ям, прізвищем або email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Результати пошуку успішно отримано"),
+            @ApiResponse(responseCode = "400", description = "Порожній запит пошуку")
+    })
     @GetMapping("/search")
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserPublicDTO>> searchUsers(@RequestParam String q) {
@@ -101,6 +113,11 @@ public class UserController {
     }
 
     /** GET /api/user/{id} - отримати користувача за ID */
+    @Operation(summary = "Отримати користувача за ID", description = "Повертає публічну інформацію про користувача за його ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Користувач успішно знайдено"),
+            @ApiResponse(responseCode = "404", description = "Користувач не знайдено")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<UserPublicDTO> getUserById(@PathVariable UUID id) {
         try {
@@ -124,6 +141,11 @@ public class UserController {
     }
 
     /** GET /api/user/me - отримати поточного авторизованого користувача */
+    @Operation(summary = "Отримати поточного користувача", description = "Повертає повну інформацію про поточного авторизованого користувача")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Інформація про користувача успішно отримано"),
+            @ApiResponse(responseCode = "401", description = "Користувач не авторизований")
+    })
     @GetMapping("/me")
     @Transactional(readOnly = true)
     public ResponseEntity<UserPrivateDTO> getCurrentUser() {
@@ -158,6 +180,12 @@ public class UserController {
     }
 
     /** PUT /api/user/me - оновити дані поточного користувача */
+    @Operation(summary = "Оновити профіль користувача", description = "Оновлює дані поточного авторизованого користувача")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Профіль успішно оновлено"),
+            @ApiResponse(responseCode = "400", description = "Невірні дані для оновлення"),
+            @ApiResponse(responseCode = "401", description = "Користувач не авторизований")
+    })
     @PutMapping("/me")
     public ResponseEntity<UserPrivateDTO> updateCurrentUser(
             @RequestBody Map<String, Object> userData) {

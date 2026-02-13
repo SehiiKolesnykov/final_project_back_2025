@@ -6,6 +6,10 @@ import com.example.step_project_beck_spring.request.AuthResponse;
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
 import com.example.step_project_beck_spring.service.JwtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +31,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "API для автентифікації та реєстрації користувачів")
 public class JwtController {
 
     // AuthenticationManager — для перевірки логіну/паролю
@@ -52,6 +57,12 @@ public class JwtController {
      * Реєстрація нового користувача.
      * Створює користувача з emailVerified = true для тестування.
      */
+    @Operation(summary = "Реєстрація нового користувача", description = "Створює нового користувача та повертає JWT токен")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Користувач успішно зареєстрований"),
+            @ApiResponse(responseCode = "409", description = "Користувач з таким email вже існує"),
+            @ApiResponse(responseCode = "400", description = "Невірні дані реєстрації")
+    })
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest request) {
         try {
@@ -106,6 +117,12 @@ public class JwtController {
      *  Генерує JWT токен (на 6 годин або 7 днів, залежно від rememberMe).
      *   Повертає AuthResponse із токеном клієнту.
      */
+    @Operation(summary = "Автентифікація користувача", description = "Перевіряє email та пароль, повертає JWT токен")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Успішна автентифікація, повертається JWT токен"),
+            @ApiResponse(responseCode = "401", description = "Невірний email або пароль"),
+            @ApiResponse(responseCode = "403", description = "Email не підтверджено")
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
         try {

@@ -49,6 +49,8 @@ public class SecurityConfig {
 
                 // Правила авторизації для різних ендпоінтів
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger UI та API документація доступні без автентифікації
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
                         // Статичні файли (HTML, CSS, JS) доступні без автентифікації
                         .requestMatchers("/", "/index.html", "/login.html", "/chat.html", "/*.html", "/*.css", "/*.js").permitAll()//це для власного фронта
                         // Доступ за токеном — автентифікація та реєстрація (ВАЖЛИВО: має бути перед іншими правилами)
