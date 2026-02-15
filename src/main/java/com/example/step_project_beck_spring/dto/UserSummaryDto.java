@@ -11,6 +11,11 @@ public record UserSummaryDto(
         String lastName,
         String avatarUrl,
         Boolean isFollowing
-) {}
+) {
+    // Конструктор з 4 параметрами
+    public UserSummaryDto(UUID id, String firstName, String lastName, String avatarUrl) {
+        this(id, firstName, lastName, avatarUrl, null);
+    }
+}
 
 
