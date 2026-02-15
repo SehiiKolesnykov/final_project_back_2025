@@ -93,8 +93,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Дозволяємо тільки твій фронт (Vercel)
-        config.setAllowedOrigins(List.of("https://widi-rho.vercel.app"));
+
+        config.setAllowedOrigins(List.of(
+                "https://widi-rho.vercel.app",      // продакшн
+                "http://localhost:5173"             // локальний фронт
+        ));
         // Дозволяємо методи, які потрібні
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         // Дозволяємо всі заголовки

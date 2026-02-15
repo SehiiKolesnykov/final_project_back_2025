@@ -76,7 +76,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             String jwt = jwtService.generateToken(user, true);
             log.info("JWT успішно згенеровано");
 
-            String cookie = "jwt=" + jwt + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800";
+            String cookie = "jwt=" + jwt + "; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800";
             response.addHeader("Set-Cookie", cookie);
             log.info("Cookie встановлено");
 
