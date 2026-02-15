@@ -49,7 +49,7 @@ public class User implements UserDetails {
     private String backgroundImgUrl;
 
     // Firebase UID — головний ідентифікатор користувача з Firebase
-    @Column(name = "firebase_uid", unique = true, nullable = false)
+    @Column(name = "firebase_uid", unique = true, nullable = true)
     private String firebaseUid;
 
     @Column(name = "google_id", unique = true)
