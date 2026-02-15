@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByFirebaseUid(String firebaseUid);
 
+    Optional<User> findByGoogleId(String googleId);
+
     /**
      * Пошук користувачів за частиною імені, прізвища або email (case-insensitive)
      * Виключає поточного користувача

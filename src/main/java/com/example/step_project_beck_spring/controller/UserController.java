@@ -91,14 +91,7 @@ public class UserController {
         dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
         dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
         dto.setPostsCount(user.getPosts() != null ? user.getPosts().size() : 0);
-
-        User currentUser = currentUserService.getCurrentUser(); // або з SecurityContext
-        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(
-                currentUser.getId(),
-                user.getId()
-        );
-
-        dto.setFollowing(isFollowing);
+        dto.setFollowing(userService.isFollowing(user));
         return dto;
     }
 }

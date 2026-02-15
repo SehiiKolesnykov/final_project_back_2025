@@ -43,10 +43,6 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    // Поле password більше не потрібне при використанні Firebase Auth
-    // @Column(nullable = false) — видаляємо
-    // private String password;
-
     private LocalDate birthDate;
 
     private String avatarUrl;
@@ -56,11 +52,8 @@ public class User implements UserDetails {
     @Column(name = "firebase_uid", unique = true, nullable = false)
     private String firebaseUid;
 
-    // emailVerified більше не потрібне, бо Firebase сам керує верифікацією (або ми її вимкнули)
-    // private boolean emailVerified = false;
-    // private String verificationCode;
-
-    // private String googleId;  // можна залишити, якщо плануєте додати Google OAuth пізніше
+    @Column(name = "google_id", unique = true)
+    private String googleId;
 
     @CreationTimestamp
     @Column(updatable = false)

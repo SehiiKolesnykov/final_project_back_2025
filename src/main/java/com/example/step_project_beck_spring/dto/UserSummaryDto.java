@@ -9,7 +9,8 @@ public record UserSummaryDto(
         UUID id,
         String firstName,
         String lastName,
-        String avatarUrl
+        String avatarUrl,
+        Boolean isFollowing
 ) {}
 
 

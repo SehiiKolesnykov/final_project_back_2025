@@ -34,6 +34,7 @@ public class PostService {
     private final NotificationSubscriptionService notificationSubscriptionService;
     private final CurrentUserService currentUserService;
     private final LikeRepository likeRepository;
+    private final UserService userService;
 
     /**
      * Створює новий пост від імені поточного користувача
@@ -235,7 +236,8 @@ public class PostService {
                 post.getAuthor().getId(),
                 post.getAuthor().getFirstName(),
                 post.getAuthor().getLastName(),
-                post.getAuthor().getAvatarUrl()
+                post.getAuthor().getAvatarUrl(),
+                userService.isFollowing(post.getAuthor())
         );
 
         return PostDto.builder()

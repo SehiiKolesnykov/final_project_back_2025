@@ -54,13 +54,6 @@ public class UserServiceImpl implements UserService {
     // РУЧНИЙ МАПІНГ строго 9 полів як у DTO
     private UserPublicDTO convertToDTO(User user) {
 
-        User currentUser = currentUserService.getCurrentUser();
-
-        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(
-                currentUser.getId(),
-                user.getId()
-        );
-
         return new UserPublicDTO(
                 user.getId(),                 // id
                 user.getFirstName(),          // firstName
@@ -71,7 +64,21 @@ public class UserServiceImpl implements UserService {
                 user.getFollowing() != null ? user.getFollowing().size() : 0,     // followingCount (поки що 0)
                 user.getFollowers() != null ? user.getFollowers().size() : 0,     // followersCount (поки що 0)
                 user.getPosts() != null ? user.getPosts().size() : 0,             // postsCount (поки що 0)
-                isFollowing
+                isFollowing(user)
         );
+    }
+
+    public Boolean isFollowing (User user) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        if (currentUser.equals(user)) {
+            return false;
+        }
+        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(
+                currentUser.getId(),
+                user.getId()
+        );
+
+        return isFollowing;
     }
 }
