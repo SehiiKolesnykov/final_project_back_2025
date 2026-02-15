@@ -100,6 +100,17 @@ public class NotificationService {
                 notification.getCreatedAt()
         );
     }
+
+    // видалення сповіщень
+    @Transactional
+    public void deleteNotification(UUID notificationId, UUID recipientId) {
+        Notification n = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("Сповіщення не знайдено"));
+        if (!n.getRecipient().getId().equals(recipientId)) {
+            throw new IllegalArgumentException("Немає доступу");
+        }
+        notificationRepository.delete(n);
+    }
 }
 
 

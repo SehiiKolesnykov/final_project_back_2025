@@ -3,7 +3,9 @@ package com.example.step_project_beck_spring.controller;
 import com.example.step_project_beck_spring.dto.UpdateUserRequest;
 import com.example.step_project_beck_spring.dto.UserPublicDTO;
 import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.FollowRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
+import com.example.step_project_beck_spring.service.CurrentUserService;
 import com.example.step_project_beck_spring.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,8 @@ public class UserController {
 
     private final UserService userService;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
+    private final FollowRepository followRepository;
 
     // ПУБЛІЧНІ МЕТОДИ (Пошук)
     @GetMapping
@@ -61,7 +65,13 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserPublicDTO> getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(userService.getUserByEmail(email));
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("User not found"));
+
+        // Для /me завжди following = false (немає сенсу підписуватися на себе)
+        UserPublicDTO dto = mapToPublicDTO(currentUser);
+        dto.setFollowing(false);
+        return ResponseEntity.ok(dto);
     }
 
     @PatchMapping("/update")
@@ -81,7 +91,14 @@ public class UserController {
         dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
         dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
         dto.setPostsCount(user.getPosts() != null ? user.getPosts().size() : 0);
-        dto.setFollowing(false);
+
+        User currentUser = currentUserService.getCurrentUser(); // або з SecurityContext
+        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(
+                currentUser.getId(),
+                user.getId()
+        );
+
+        dto.setFollowing(isFollowing);
         return dto;
     }
 }

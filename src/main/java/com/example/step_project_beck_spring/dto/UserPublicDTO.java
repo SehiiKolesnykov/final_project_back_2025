@@ -25,6 +25,6 @@ public class UserPublicDTO {
     private int followersCount;
     private int postsCount;
 
-    /** Чи підписаний авторизований користувач на цей профіль. Поки що завжди false бо немає механізму авторизації.*/
-    private boolean isFollowing;
+    /** Чи підписаний авторизований користувач на цей профіль.*/
+    private boolean following;
 }

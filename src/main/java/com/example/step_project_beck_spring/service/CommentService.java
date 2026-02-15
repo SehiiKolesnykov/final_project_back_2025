@@ -43,6 +43,9 @@ public class CommentService {
         // Збереження коментаря в БД
         Comment saved = commentRepository.save(comment);
 
+        post.setCommentsCount(post.getCommentsCount() + 1);
+        postRepository.save(post);
+
         return new CommentDto(
                 saved.getId(),
                 saved.getContent(),

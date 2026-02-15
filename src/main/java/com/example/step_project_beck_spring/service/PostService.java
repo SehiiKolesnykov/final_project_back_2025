@@ -5,6 +5,7 @@ import com.example.step_project_beck_spring.dto.UserSummaryDto;
 import com.example.step_project_beck_spring.entities.Post;
 import com.example.step_project_beck_spring.entities.SavedPost;
 import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.LikeRepository;
 import com.example.step_project_beck_spring.repository.PostRepository;
 import com.example.step_project_beck_spring.repository.SavedPostRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
@@ -32,6 +33,7 @@ public class PostService {
     private final SavedPostRepository savedPostRepository;
     private final NotificationSubscriptionService notificationSubscriptionService;
     private final CurrentUserService currentUserService;
+    private final LikeRepository likeRepository;
 
     /**
      * Створює новий пост від імені поточного користувача
@@ -53,6 +55,7 @@ public class PostService {
                 .build();
 
         Post saved = postRepository.save(post);
+        postRepository.flush();
 
         // Надсилаємо сповіщення підписникам про новий пост
         notificationSubscriptionService.notifySubscribersAboutNewPost(saved);
@@ -223,6 +226,11 @@ public class PostService {
      * @return готовий до відправки DTO
      */
     private PostDto mapToDto(Post post) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isLiked = likeRepository.findByUserAndPost(currentUser, post).isPresent();
+        boolean isSaved = savedPostRepository.existsByUserIdAndPostId(currentUser.getId(), post.getId());
+
         UserSummaryDto authorDto = new UserSummaryDto(
                 post.getAuthor().getId(),
                 post.getAuthor().getFirstName(),
@@ -240,6 +248,8 @@ public class PostService {
                 .commentsCount(post.getCommentsCount())
                 .repostsCount(post.getRepostsCount())
                 .quotesCount(post.getQuotesCount())
+                .liked(isLiked)
+                .saved(isSaved)
                 .build();
     }
 }

@@ -89,6 +89,16 @@
 
 ---
 
+## DELETE /api/notifications/{notificationId}
+
+Видалити сповіщення
+
+### Response
+
+**Status**: `204 No Content — сповіщення успішно видалено`
+
+---
+
 ## Notification Subscriptions
 
 ### POST /api/notifications/subscriptions/{targetUserId}

@@ -51,6 +51,14 @@ public class NotificationController {
         long count = notificationService.countUnread(currentUser.getId());
         return ResponseEntity.ok(count);
     }
+
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void> deleteNotification(@PathVariable UUID notificationId,
+                                                   Authentication authentication) {
+        User currentUser = (User) authentication.getPrincipal();
+        notificationService.deleteNotification(notificationId, currentUser.getId());
+        return ResponseEntity.noContent().build();
+    }
 }
 
 

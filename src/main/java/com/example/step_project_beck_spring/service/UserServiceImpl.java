@@ -3,6 +3,7 @@ package com.example.step_project_beck_spring.service;
 import com.example.step_project_beck_spring.dto.UpdateUserRequest;
 import com.example.step_project_beck_spring.dto.UserPublicDTO;
 import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.repository.FollowRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +17,8 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
+    private final FollowRepository followRepository;
 
     @Override
     public UserPublicDTO getUserById(UUID id) {
@@ -28,6 +31,8 @@ public class UserServiceImpl implements UserService {
     public UserPublicDTO getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found with email: " + email));
+        //fetch для коректних лічильників
+        user = userRepository.findByIdWithCollections(user.getId()).orElse(user);
         return convertToDTO(user);
     }
 
@@ -48,6 +53,14 @@ public class UserServiceImpl implements UserService {
 
     // РУЧНИЙ МАПІНГ строго 9 полів як у DTO
     private UserPublicDTO convertToDTO(User user) {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        boolean isFollowing = followRepository.existsByFollowerIdAndFollowingId(
+                currentUser.getId(),
+                user.getId()
+        );
+
         return new UserPublicDTO(
                 user.getId(),                 // id
                 user.getFirstName(),          // firstName
@@ -55,10 +68,10 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(),              // Email
                 user.getAvatarUrl(),          // avatarUrl
                 user.getBackgroundImgUrl(),   // backgroundImg (у DTO поле називається так у Entity - Url)
-                0,                            // followingCount (поки що 0)
-                0,                            // followersCount (поки що 0)
-                0,                            // postsCount (поки що 0)
-                false                         // isFollowing (поки що false)
+                user.getFollowing() != null ? user.getFollowing().size() : 0,     // followingCount (поки що 0)
+                user.getFollowers() != null ? user.getFollowers().size() : 0,     // followersCount (поки що 0)
+                user.getPosts() != null ? user.getPosts().size() : 0,             // postsCount (поки що 0)
+                isFollowing
         );
     }
 }

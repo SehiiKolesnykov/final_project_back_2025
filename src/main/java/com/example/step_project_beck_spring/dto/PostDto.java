@@ -44,4 +44,10 @@ public class PostDto {
 
     /** Кількість цитат цього поста (quote posts) */
     private int quotesCount;
+
+    /** Чи лайкнув пост*/
+    private boolean liked;
+
+    /** Чи зберіг пост*/
+    private boolean saved;
 }
