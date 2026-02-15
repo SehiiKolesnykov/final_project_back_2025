@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -63,6 +64,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                         .firstName(firstName != null ? firstName : "Google")
                                         .lastName(lastName != null ? lastName : "User")
                                         .avatarUrl(picture)
+                                        .birthDate(null)
+                                        .firebaseUid(null)
+                                        .createdAt(LocalDateTime.now())
                                         .build();
                                 return userRepository.save(newUser);
                             }));
