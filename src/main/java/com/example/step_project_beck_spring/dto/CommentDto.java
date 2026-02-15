@@ -16,5 +16,6 @@ public class CommentDto {
     private UUID authorId;
     private UUID postId;
     private LocalDateTime createdAt;
+    private int commentsCount;
 }
 
