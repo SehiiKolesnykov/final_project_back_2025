@@ -58,7 +58,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}          # з Google Cloud Console
             client-secret: ${GOOGLE_CLIENT_SECRET}  # з Google Cloud Console
             scope: openid,email,profile
-            redirect-uri: "https://step-project-api.onrender.com/login/oauth2/code/google"
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
 
         provider:
           google:

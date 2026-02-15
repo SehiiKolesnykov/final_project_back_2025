@@ -10,11 +10,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
@@ -24,48 +26,63 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        try {
+            log.info("=== Початок обробки успішної Google авторизації ===");
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            log.info("Отримано дані від Google: principal class = {}", oAuth2User.getClass().getName());
 
-        String googleId = oAuth2User.getAttribute("sub");
-        String email = oAuth2User.getAttribute("email");
-        String firstName = oAuth2User.getAttribute("given_name");
-        String lastName = oAuth2User.getAttribute("family_name");
-        String picture = oAuth2User.getAttribute("picture");
+            String googleId = oAuth2User.getAttribute("sub");
+            String email = oAuth2User.getAttribute("email");
+            String firstName = oAuth2User.getAttribute("given_name");
+            String lastName = oAuth2User.getAttribute("family_name");
+            String picture = oAuth2User.getAttribute("picture");
 
-        // Знаходимо або створюємо користувача
-        User user = userRepository.findByGoogleId(googleId)
-                .orElseGet(() -> userRepository.findByEmail(email)
-                        .map(existing -> {
-                            // Якщо знайшли за email, але без googleId — прив'язуємо
-                            existing.setGoogleId(googleId);
-                            if (picture != null) existing.setAvatarUrl(picture);
-                            return userRepository.save(existing);
-                        })
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .firstName(firstName != null ? firstName : "Google")
-                            .lastName(lastName != null ? lastName : "User")
-                            .avatarUrl(picture)
-                            .firebaseUid(null)
-                            .googleId(googleId)
-                            .build();
-                    return userRepository.save(newUser);
-                }));
+            log.info("Google дані: googleId={}, email={}, name={} {}, picture={}",
+                    googleId, email, firstName, lastName, picture);
 
-        // Генеруємо JWT (rememberMe = true → 7 днів)
-        String jwt = jwtService.generateToken(user, true);
+            if (email == null) {
+                log.error("Email від Google відсутній");
+                response.sendError(500, "Email не надано Google");
+                return;
+            }
 
-        // Ставимо HttpOnly cookie
-        String cookie = "jwt=" + jwt + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800";
-        response.addHeader("Set-Cookie", cookie);
+            User user = userRepository.findByGoogleId(googleId)
+                    .orElseGet(() -> userRepository.findByEmail(email)
+                            .map(existing -> {
+                                log.info("Знайдено користувача за email, додаємо googleId");
+                                existing.setGoogleId(googleId);
+                                if (picture != null) existing.setAvatarUrl(picture);
+                                return userRepository.save(existing);
+                            })
+                            .orElseGet(() -> {
+                                log.info("Створюємо нового користувача через Google");
+                                User newUser = User.builder()
+                                        .googleId(googleId)
+                                        .email(email)
+                                        .firstName(firstName != null ? firstName : "Google")
+                                        .lastName(lastName != null ? lastName : "User")
+                                        .avatarUrl(picture)
+                                        .build();
+                                return userRepository.save(newUser);
+                            }));
 
-        // Перенаправляємо на фронт
-        String redirectUri = (String) request.getSession().getAttribute("originalUrl");
-        if (redirectUri == null) {
-            redirectUri = "https://widi-rho.vercel.app/";
+            log.info("Користувач готовий: id={}, email={}", user.getId(), user.getEmail());
+
+            String jwt = jwtService.generateToken(user, true);
+            log.info("JWT успішно згенеровано");
+
+            String cookie = "jwt=" + jwt + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800";
+            response.addHeader("Set-Cookie", cookie);
+            log.info("Cookie встановлено");
+
+            String redirectUrl = "https://widi-rho.vercel.app/auth";
+            log.info("Редирект на: {}", redirectUrl);
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+
+        } catch (Exception e) {
+            log.error("Помилка в OAuth2 success handler", e);
+            response.sendError(500, "Помилка авторизації: " + e.getMessage());
         }
-        getRedirectStrategy().sendRedirect(request, response, redirectUri);
     }
 }
