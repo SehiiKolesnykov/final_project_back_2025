@@ -14,9 +14,13 @@ import com.example.step_project_beck_spring.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,7 +73,12 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));
         validateParticipation(thread, currentUser);
         
-        List<ChatMessage> messages = messageRepository.findByThreadOrderByCreatedAtAsc(thread);
+        // Отримуємо останні 20 повідомлень (відсортовані за датою створення DESC)
+        Pageable pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending());
+        List<ChatMessage> messages = messageRepository.findByThreadOrderByCreatedAtDesc(thread, pageable);
+        
+        // Реверсуємо список, щоб найстаріші були першими (для правильного відображення в чаті)
+        Collections.reverse(messages);
         
         // Відмічаємо повідомлення як прочитані
         if (!messages.isEmpty()) {
