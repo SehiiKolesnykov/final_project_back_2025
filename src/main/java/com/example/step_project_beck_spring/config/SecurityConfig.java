@@ -35,6 +35,9 @@ public class SecurityConfig {
 
                 // Авторизація запитів
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger UI та API документація доступні без автентифікації
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                        
                         // Публічні сторінки та статичні файли
                         .requestMatchers("/", "/index.html", "/login.html", "/chat.html",
                                 "/favicon.ico", "/**/*.html", "/**/*.css", "/**/*.js").permitAll()
