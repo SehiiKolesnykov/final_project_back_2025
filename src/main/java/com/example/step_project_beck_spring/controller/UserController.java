@@ -12,6 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -22,6 +26,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "API для управління користувачами та профілями")
 public class UserController {
 
     private final UserService userService;
@@ -30,6 +35,8 @@ public class UserController {
     private final FollowRepository followRepository;
 
     // ПУБЛІЧНІ МЕТОДИ (Пошук)
+    @Operation(summary = "Отримати всіх користувачів", description = "Повертає список всіх користувачів")
+    @ApiResponse(responseCode = "200", description = "Список користувачів успішно отримано")
     @GetMapping
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserPublicDTO>> getAllUsers() {
@@ -39,6 +46,11 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @Operation(summary = "Пошук користувачів", description = "Шукає користувачів за ім'ям або прізвищем")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Результати пошуку успішно отримано"),
+            @ApiResponse(responseCode = "400", description = "Порожній запит пошуку")
+    })
     @GetMapping("/search")
     @Transactional(readOnly = true)
     public ResponseEntity<List<UserPublicDTO>> searchUsers(@RequestParam String q) {
@@ -53,6 +65,11 @@ public class UserController {
     }
 
     // ВАШІ МЕТОДИ (Профіль)
+    @Operation(summary = "Отримати користувача за ID", description = "Повертає публічну інформацію про користувача за його ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Користувач успішно знайдено"),
+            @ApiResponse(responseCode = "404", description = "Користувач не знайдено")
+    })
     @GetMapping("/{id}")
     public ResponseEntity<UserPublicDTO> getUserById(@PathVariable UUID id) {
         try {
@@ -62,6 +79,8 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Отримати поточного користувача", description = "Повертає інформацію про поточного авторизованого користувача")
+    @ApiResponse(responseCode = "200", description = "Інформація про користувача успішно отримано")
     @GetMapping("/me")
     public ResponseEntity<UserPublicDTO> getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -74,6 +93,11 @@ public class UserController {
         return ResponseEntity.ok(dto);
     }
 
+    @Operation(summary = "Оновити профіль користувача", description = "Оновлює дані поточного авторизованого користувача")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Профіль успішно оновлено"),
+            @ApiResponse(responseCode = "400", description = "Невірні дані для оновлення")
+    })
     @PatchMapping("/update")
     public ResponseEntity<String> updateProfile(@RequestBody UpdateUserRequest request) {
         userService.updateProfile(request);
