@@ -285,6 +285,51 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
+    public void deleteThread(Long threadId, User user) {
+        ChatThread thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));
+        
+        // Перевіряємо, що користувач є учасником треду
+        validateParticipation(thread, user);
+        
+        // Видаляємо всі статуси прочитання для цього треду
+        List<ChatReadStatus> readStatuses = readStatusRepository.findByThread(thread);
+        if (!readStatuses.isEmpty()) {
+            readStatusRepository.deleteAll(readStatuses);
+        }
+        
+        // Видаляємо всі повідомлення треду
+        List<ChatMessage> messages = messageRepository.findByThread(thread);
+        if (!messages.isEmpty()) {
+            messageRepository.deleteAll(messages);
+        }
+        
+        // Видаляємо сам тред
+        threadRepository.delete(thread);
+        entityManager.flush();
+    }
+    
+    @Override
+    @Transactional
+    public void deleteMessage(Long messageId, User user) {
+        ChatMessage message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new EntityNotFoundException("Chat message not found: " + messageId));
+        
+        // Перевіряємо, що користувач є автором повідомлення
+        if (!message.getSender().getId().equals(user.getId())) {
+            throw new IllegalStateException("You can only delete your own messages");
+        }
+        
+        // Перевіряємо, що користувач є учасником треду
+        validateParticipation(message.getThread(), user);
+        
+        // Видаляємо повідомлення
+        messageRepository.delete(message);
+        entityManager.flush();
+    }
+
+    @Override
+    @Transactional
     public void markThreadAsRead(Long threadId, User user) {
         ChatThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));

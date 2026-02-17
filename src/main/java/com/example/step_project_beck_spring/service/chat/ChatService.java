@@ -17,6 +17,10 @@ public interface ChatService {
 
     ChatMessageResponse sendMessage(ChatMessageRequest request);
     
+    void deleteThread(Long threadId, User user);
+    
+    void deleteMessage(Long messageId, User user);
+    
     void markThreadAsRead(Long threadId, User user);
 }
 

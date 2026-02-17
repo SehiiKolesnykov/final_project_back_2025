@@ -12,5 +12,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatMessage> findByThreadOrderByCreatedAtAsc(ChatThread thread);
 
     List<ChatMessage> findByThreadOrderByCreatedAtDesc(ChatThread thread, Pageable pageable);
+    
+    List<ChatMessage> findByThread(ChatThread thread);
 }
 

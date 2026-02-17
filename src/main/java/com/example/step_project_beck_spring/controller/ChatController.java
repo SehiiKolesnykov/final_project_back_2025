@@ -76,5 +76,31 @@ public class ChatController {
         chatService.markThreadAsRead(threadId, currentUser);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "Видалити тред", description = "Видаляє весь чат-тред з усіма повідомленнями. Доступно тільки для учасників треду")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Тред успішно видалено"),
+            @ApiResponse(responseCode = "404", description = "Тред не знайдено"),
+            @ApiResponse(responseCode = "403", description = "Користувач не є учасником треду")
+    })
+    @DeleteMapping("/thread/{threadId}")
+    public ResponseEntity<Void> deleteThread(@PathVariable Long threadId) {
+        User currentUser = currentUserService.getCurrentUser();
+        chatService.deleteThread(threadId, currentUser);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Видалити повідомлення", description = "Видаляє окреме повідомлення з чату. Доступно тільки для автора повідомлення")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Повідомлення успішно видалено"),
+            @ApiResponse(responseCode = "404", description = "Повідомлення не знайдено"),
+            @ApiResponse(responseCode = "403", description = "Користувач не є автором повідомлення")
+    })
+    @DeleteMapping("/message/{messageId}")
+    public ResponseEntity<Void> deleteMessage(@PathVariable Long messageId) {
+        User currentUser = currentUserService.getCurrentUser();
+        chatService.deleteMessage(messageId, currentUser);
+        return ResponseEntity.ok().build();
+    }
 }
 
