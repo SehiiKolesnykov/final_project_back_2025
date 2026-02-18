@@ -64,7 +64,7 @@ public class UserController {
         return ResponseEntity.ok(foundUsers.stream().map(this::mapToPublicDTO).collect(Collectors.toList()));
     }
 
-    // ВАШІ МЕТОДИ (Профіль)
+    // (Профіль)
     @Operation(summary = "Отримати користувача за ID", description = "Повертає публічну інформацію про користувача за його ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Користувач успішно знайдено"),
@@ -72,11 +72,8 @@ public class UserController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<UserPublicDTO> getUserById(@PathVariable UUID id) {
-        try {
-            return ResponseEntity.ok(userService.getUserById(id));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        // Очищено: якщо юзера немає, GlobalHandler поверне 404
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @Operation(summary = "Отримати поточного користувача", description = "Повертає інформацію про поточного авторизованого користувача")
@@ -87,7 +84,6 @@ public class UserController {
         User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NoSuchElementException("User not found"));
 
-        // Для /me завжди following = false (немає сенсу підписуватися на себе)
         UserPublicDTO dto = mapToPublicDTO(currentUser);
         dto.setFollowing(false);
         return ResponseEntity.ok(dto);

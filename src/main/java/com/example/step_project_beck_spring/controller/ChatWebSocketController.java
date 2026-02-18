@@ -20,14 +20,14 @@ public class ChatWebSocketController {
     private final ChatService chatService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatWebSocketController(ChatService chatService, 
+    public ChatWebSocketController(ChatService chatService,
                                    SimpMessagingTemplate messagingTemplate) {
         this.chatService = chatService;
         this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload ChatMessageRequest request, 
+    public void handleChatMessage(@Payload ChatMessageRequest request,
                                   StompHeaderAccessor headerAccessor) {
         try {
             System.out.println("========================================");
@@ -37,20 +37,20 @@ public class ChatWebSocketController {
             System.out.println("Request content: " + request.getContent());
             System.out.println("Request threadId: " + request.getThreadId());
             System.out.println("Request recipientUserId: " + request.getRecipientUserId());
-            
+
             // Отримуємо User з SecurityContext або з StompHeaderAccessor
             // ВАЖЛИВО: WebSocket використовує асинхронні потоки, тому SecurityContext може бути порожнім
             // Спочатку намагаємося отримати з StompHeaderAccessor (який встановлюється в preSend)
             User user = null;
             Authentication auth = null;
-            
+
             System.out.println("Current thread: " + Thread.currentThread().getName());
-            
+
             // Спочатку намагаємося отримати з StompHeaderAccessor (найнадійніший спосіб)
             if (headerAccessor != null) {
                 java.security.Principal principal = headerAccessor.getUser();
                 System.out.println("Principal from headerAccessor: " + (principal != null ? principal.getClass().getName() : "null"));
-                
+
                 if (principal instanceof Authentication principalAuth) {
                     auth = principalAuth;
                     System.out.println("✅ Found Authentication in StompHeaderAccessor");
@@ -60,14 +60,14 @@ public class ChatWebSocketController {
                     System.out.println("✅ Created Authentication from User in StompHeaderAccessor");
                 }
             }
-            
+
             // Якщо не знайшли в StompHeaderAccessor, намагаємося з SecurityContext
             if (auth == null) {
                 System.out.println("⚠️ Trying SecurityContext...");
                 auth = SecurityContextHolder.getContext().getAuthentication();
                 System.out.println("Authentication from SecurityContext: " + (auth != null ? auth.getClass().getName() : "null"));
             }
-            
+
             // Перевіряємо, чи є валідний User
             if (auth != null && auth.getPrincipal() instanceof User) {
                 user = (User) auth.getPrincipal();
@@ -85,24 +85,24 @@ public class ChatWebSocketController {
             }
             System.out.println("✅ Authenticated user: " + user.getEmail());
             System.out.println("✅ User ID: " + user.getId());
-            
+
             // Встановлюємо senderUserId з поточного автентифікованого користувача
             UUID senderId = user.getId();
             System.out.println("Setting senderUserId: " + senderId);
             request.setSenderUserId(senderId);
-            
+
             System.out.println("Calling chatService.sendMessage...");
             ChatMessageResponse response = chatService.sendMessage(request);
             System.out.println("✅ Message saved, response: " + response);
             System.out.println("Response ID: " + response.getId());
             System.out.println("Response threadId: " + response.getThreadId());
             System.out.println("Response content: " + response.getContent());
-            
+
             // Відправляємо повідомлення на тред, щоб обидва учасники отримали його
             String topic = "/topic/chat/" + response.getThreadId();
             System.out.println("Sending message to topic: " + topic);
             messagingTemplate.convertAndSend(topic, response);
-            
+
             System.out.println("✅ Повідомлення відправлено на тред: " + topic);
             System.out.println("✅ Thread ID: " + response.getThreadId());
             System.out.println("✅ Message ID: " + response.getId());
@@ -116,4 +116,3 @@ public class ChatWebSocketController {
         }
     }
 }
-
