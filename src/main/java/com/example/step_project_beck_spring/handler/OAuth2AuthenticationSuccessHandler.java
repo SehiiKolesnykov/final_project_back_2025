@@ -80,9 +80,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                         .firstName(firstName != null ? firstName : "Google")
                                         .lastName(lastName != null ? lastName : "User")
                                         .avatarUrl(picture)
-                                        .nickName(nickName)  // ← КРИТИЧНО ДОДАНО!
+                                        .nickName(nickName)
                                         .birthDate(null)
                                         .firebaseUid(null)
+                                        .aboutMe(null)
                                         .createdAt(LocalDateTime.now())
                                         .build();
 
