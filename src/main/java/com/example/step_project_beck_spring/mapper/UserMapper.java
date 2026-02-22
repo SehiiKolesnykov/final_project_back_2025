@@ -17,7 +17,8 @@ public class UserMapper {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getAvatarUrl(),
-                user.getNickName()
+                user.getNickName(),
+                user.getAboutMe()
         );
     }
 }

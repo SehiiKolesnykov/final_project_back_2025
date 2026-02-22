@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import jakarta.persistence.EntityNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -27,11 +28,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
-    // Помилки "Не знайдено" (404) - Юзер, Пост, Тред
+    // Помилки "Не знайдено" (404) - Юзер, Пост, Тред, Повідомлення, тощо
     @ExceptionHandler({
             UsernameNotFoundException.class,
             NoSuchElementException.class,
-            IllegalArgumentException.class // Часто кидається, якщо ID невірний
+            EntityNotFoundException.class,  // ← Додано для чату (тред/повідомлення не знайдено)
+            IllegalArgumentException.class  // Часто кидається, якщо ID невірний
     })
     public ResponseEntity<Map<String, String>> handleNotFound(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -48,9 +50,12 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "Authentication failed", "message", "Invalid email or password"));
     }
 
-    // Помилки доступу (403) - Немає прав
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException e) {
+    // Помилки доступу (403) - Немає прав (додано для чату: не учасник треду, не автор повідомлення)
+    @ExceptionHandler({
+            AccessDeniedException.class,
+            IllegalStateException.class  // ← Додано для чату (IllegalStateException для "not participant" / "not author")
+    })
+    public ResponseEntity<Map<String, String>> handleAccessDenied(Exception e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", "Access denied", "message", e.getMessage()));
     }

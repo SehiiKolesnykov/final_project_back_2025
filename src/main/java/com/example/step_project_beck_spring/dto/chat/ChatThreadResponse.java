@@ -32,14 +32,13 @@ public class ChatThreadResponse {
 
     public static ChatThreadResponse from(ChatThread thread, User currentUser, Long unreadCount) {
         List<ChatContactResponse> participants = thread.getParticipants().stream()
-                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail()))
+                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail(), user.getAvatarUrl()))  // ← Додано avatarUrl
                 .collect(Collectors.toList());
-
 
         ChatContactResponse otherParticipant = thread.getParticipants().stream()
                 .filter(user -> !user.getId().equals(currentUser.getId()))
                 .findFirst()
-                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail()))
+                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail(), user.getAvatarUrl()))  // ← Додано avatarUrl
                 .orElse(null);
 
         return new ChatThreadResponse(
@@ -51,7 +50,6 @@ public class ChatThreadResponse {
                 otherParticipant
         );
     }
-
 
     public UUID getId() {
         return id;

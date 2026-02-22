@@ -21,6 +21,7 @@ public class UserPublicDTO {
     private String avatarUrl;
     private String backgroundImg;
     private String nickName;
+    private String aboutMe;
 
     private int followingCount;
     private int followersCount;

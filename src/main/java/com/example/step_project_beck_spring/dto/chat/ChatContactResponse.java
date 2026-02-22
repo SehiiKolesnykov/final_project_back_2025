@@ -7,22 +7,24 @@ public class ChatContactResponse {
     private UUID id;
     private String nickName;
     private String email;
+    private String avatarUrl;  // ← Додано
 
     public ChatContactResponse() {
     }
 
-    public ChatContactResponse(UUID id, String nickName) {
+    public ChatContactResponse(UUID id, String nickName, String avatarUrl) {
         this.id = id;
         this.nickName = nickName;
+        this.avatarUrl = avatarUrl;
         this.email = null;
     }
 
-    public ChatContactResponse(UUID id, String nickName, String email) {
+    public ChatContactResponse(UUID id, String nickName, String email, String avatarUrl) {
         this.id = id;
         this.nickName = nickName;
         this.email = email;
+        this.avatarUrl = avatarUrl;
     }
-
 
     public UUID getId() {
         return id;
@@ -46,5 +48,13 @@ public class ChatContactResponse {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 }

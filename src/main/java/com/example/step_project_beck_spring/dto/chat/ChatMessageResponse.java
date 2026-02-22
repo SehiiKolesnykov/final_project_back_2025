@@ -1,6 +1,5 @@
 package com.example.step_project_beck_spring.dto.chat;
 
-
 import com.example.step_project_beck_spring.entities.ChatMessage;
 
 import java.time.LocalDateTime;
@@ -12,41 +11,38 @@ public class ChatMessageResponse {
     private UUID threadId;
     private UUID senderId;
     private String senderNickName;
+    private String senderAvatarUrl;  // ← Додано
     private String content;
     private LocalDateTime createdAt;
     private String messageType;
-
 
     public ChatMessageResponse() {
     }
 
     public ChatMessageResponse(UUID id, UUID threadId, UUID senderId, String senderNickName,
-                               String content, LocalDateTime createdAt, String messageType) {
+                               String senderAvatarUrl, String content, LocalDateTime createdAt, String messageType) {
         this.id = id;
         this.threadId = threadId;
         this.senderId = senderId;
         this.senderNickName = senderNickName;
+        this.senderAvatarUrl = senderAvatarUrl;
         this.content = content;
         this.createdAt = createdAt;
         this.messageType = messageType;
     }
 
     public static ChatMessageResponse from(ChatMessage message) {
-        ChatMessageResponse response = new ChatMessageResponse(
+        return new ChatMessageResponse(
                 message.getId(),
                 message.getThread().getId(),
                 message.getSender().getId(),
                 message.getSender().getNickName(),
+                message.getSender().getAvatarUrl(),  // ← Додано
                 message.getContent(),
                 message.getCreatedAt(),
                 message.getMessageType() != null ? message.getMessageType().name() : "TEXT"
         );
-
-
-
-        return response;
     }
-
 
     public UUID getId() {
         return id;
@@ -80,6 +76,14 @@ public class ChatMessageResponse {
         this.senderNickName = senderNickName;
     }
 
+    public String getSenderAvatarUrl() {
+        return senderAvatarUrl;
+    }
+
+    public void setSenderAvatarUrl(String senderAvatarUrl) {
+        this.senderAvatarUrl = senderAvatarUrl;
+    }
+
     public String getContent() {
         return content;
     }
@@ -103,5 +107,4 @@ public class ChatMessageResponse {
     public void setMessageType(String messageType) {
         this.messageType = messageType;
     }
-
 }
