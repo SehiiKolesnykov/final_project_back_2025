@@ -58,6 +58,8 @@ public class SecurityConfig {
                                 "/api/follow/**",
                                 "/api/notifications/**").authenticated()
 
+                        .requestMatchers("/api/auth/logout").permitAll()
+
                         // Все інше — вимагає авторизації
                         .anyRequest().authenticated()
                 )

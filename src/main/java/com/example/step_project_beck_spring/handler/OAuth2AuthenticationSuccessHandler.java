@@ -58,20 +58,38 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                             })
                             .orElseGet(() -> {
                                 log.info("Створюємо нового користувача через Google");
+
+                                String nickName = email.substring(0, email.indexOf('@'));
+                                if (nickName.length() > 19) {
+                                    nickName = nickName.substring(0, 19);
+                                }
+
+                                // Перевіряємо унікальність
+                                int counter = 1;
+                                String baseNick = nickName;
+                                while (userRepository.existsByNickName(nickName)) {
+                                    nickName = baseNick + "_" + counter++;
+                                    if (nickName.length() > 20) {
+                                        nickName = nickName.substring(0, 20);
+                                    }
+                                }
+
                                 User newUser = User.builder()
                                         .googleId(googleId)
                                         .email(email)
                                         .firstName(firstName != null ? firstName : "Google")
                                         .lastName(lastName != null ? lastName : "User")
                                         .avatarUrl(picture)
+                                        .nickName(nickName)  // ← КРИТИЧНО ДОДАНО!
                                         .birthDate(null)
                                         .firebaseUid(null)
                                         .createdAt(LocalDateTime.now())
                                         .build();
+
                                 return userRepository.save(newUser);
                             }));
 
-            log.info("Користувач готовий: id={}, email={}", user.getId(), user.getEmail());
+            log.info("Користувач готовий: id={}, email={}, nickName={}", user.getId(), user.getEmail(), user.getNickName());
 
             String jwt = jwtService.generateToken(user, true);
             log.info("JWT успішно згенеровано");
