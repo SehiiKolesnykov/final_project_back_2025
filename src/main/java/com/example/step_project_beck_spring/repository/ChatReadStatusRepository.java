@@ -9,11 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Long> {
 
     Optional<ChatReadStatus> findByThreadAndUser(ChatThread thread, User user);
-    
+
     List<ChatReadStatus> findByThread(ChatThread thread);
 
     @Query("""
@@ -29,9 +30,8 @@ public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, 
                 SELECT r.lastReadMessage.id 
                 FROM ChatReadStatus r 
                 WHERE r.thread = :thread AND r.user = :user
-            ), 0)
+            ), NULL)  -- ← ЗМІНИЛИ 0 на NULL
         )
         """)
     Long countUnreadMessages(@Param("thread") ChatThread thread, @Param("user") User user);
 }
-
