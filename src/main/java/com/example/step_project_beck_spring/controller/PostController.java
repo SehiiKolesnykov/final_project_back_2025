@@ -9,15 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST-контролер для роботи з постами
- * Базовий шлях: /api/posts
- */
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
@@ -25,148 +22,107 @@ public class PostController {
 
     private final PostService postService;
 
-    /**
-     * Створює новий пост
-     *
-     * @param request DTO з даними для створення поста
-     * @return створений пост у вигляді PostDto
-     * @status 200 OK
-     */
     @PostMapping
     public ResponseEntity<PostDto> createPost(@Valid @RequestBody CreatePostRequest request) {
-        PostDto created = postService.createPost(request);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(postService.createPost(request));
     }
 
-    /**
-     * Часткове оновлення існуючого поста (PATCH)
-     *
-     * @param id      ідентифікатор поста
-     * @param request DTO з полями, які потрібно оновити
-     * @return оновлений пост
-     * @status 200 OK
-     */
     @PatchMapping("/{id}")
     public ResponseEntity<PostDto> updatePost(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePostRequest request) {
-        PostDto updated = postService.updatePost(id, request);
-        return ResponseEntity.ok(updated);
+        return ResponseEntity.ok(postService.updatePost(id, request));
     }
 
-    /**
-     * Видаляє пост за ідентифікатором
-     *
-     * @param id ідентифікатор поста для видалення
-     * @status 204 No Content
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable UUID id) {
         postService.deletePost(id);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Отримання стрічки постів (feed) поточного користувача
-     * (зазвичай пости від людей, на яких підписаний + власні)
-     *
-     * @param page номер сторінки (починається з 0)
-     * @param size розмір сторінки (кількість елементів)
-     * @return сторінка з постами
-     */
     @GetMapping("/feed")
     public ResponseEntity<Page<PostDto>> getFeed(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PostDto> feed = postService.getFeed(pageable);
-        return ResponseEntity.ok(feed);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "newest") String sort) {
+        Pageable pageable = getPageable(page, size, sort);
+        return ResponseEntity.ok(postService.getFeed(pageable));
     }
 
-    /**
-     * Отримання рекомендованих постів для поточного користувача
-     *
-     * @param page номер сторінки
-     * @param size кількість елементів на сторінці
-     * @return сторінка з рекомендованими постами
-     */
     @GetMapping("/recommended")
     public ResponseEntity<Page<PostDto>> getRecommended(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PostDto> recommended = postService.getRecommended(pageable);
-        return ResponseEntity.ok(recommended);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "newest") String sort) {
+        Pageable pageable = getPageable(page, size, sort);
+        return ResponseEntity.ok(postService.getRecommended(pageable));
     }
 
-    /**
-     * Отримання одного конкретного поста за його ідентифікатором
-     *
-     * @param id ідентифікатор поста
-     * @return знайдений пост
-     * @status 200 OK
-     */
     @GetMapping("/{id}")
     public ResponseEntity<PostDto> getPostById(@PathVariable UUID id) {
-        PostDto post = postService.getPostById(id);
-        return ResponseEntity.ok(post);
+        return ResponseEntity.ok(postService.getPostById(id));
     }
 
-    /**
-     * Отримання всіх постів конкретного користувача
-     *
-     * @param userId ідентифікатор автора постів
-     * @param page   номер сторінки
-     * @param size   розмір сторінки
-     * @return сторінка з постами вказаного користувача
-     */
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<PostDto>> getUserPosts(
             @PathVariable UUID userId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PostDto> posts = postService.getUserPosts(userId, pageable);
-        return ResponseEntity.ok(posts);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "newest") String sort) {
+        Pageable pageable = getPageable(page, size, sort);
+        return ResponseEntity.ok(postService.getUserPosts(userId, pageable));
     }
 
-    /**
-     * Додає пост до збережених (закладок) поточного користувача
-     *
-     * @param id ідентифікатор поста
-     * @status 200 OK
-     */
     @PostMapping("/{id}/save")
     public ResponseEntity<Void> savePost(@PathVariable UUID id) {
         postService.savePost(id);
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * Видаляє пост зі збережених (закладок) поточного користувача
-     *
-     * @param id ідентифікатор поста
-     * @status 204 No Content
-     */
     @DeleteMapping("/{id}/save")
     public ResponseEntity<Void> unsavePost(@PathVariable UUID id) {
         postService.unsavePost(id);
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Отримання списку всіх збережених постів поточного користувача
-     *
-     * @param page номер сторінки
-     * @param size кількість елементів на сторінці
-     * @return сторінка зі збереженими постами
-     */
     @GetMapping("/saved")
     public ResponseEntity<Page<PostDto>> getSavedPosts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<PostDto> saved = postService.getSavedPosts(pageable);
-        return ResponseEntity.ok(saved);
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "newest") String sort) {
+        Pageable pageable = getPageable(page, size, sort);
+        return ResponseEntity.ok(postService.getSavedPosts(pageable));
+    }
+
+    // ──── Допоміжний метод для створення Pageable з підтримкою сортування ────
+    private Pageable getPageable(int page, int size, String sort) {
+        Sort sortObj;
+        switch (sort.toLowerCase()) {
+            case "oldest":
+                sortObj = Sort.by(Sort.Direction.ASC, "createdAt");
+                break;
+            case "likes-desc":
+                sortObj = Sort.by(Sort.Direction.DESC, "likesCount")
+                        .and(Sort.by(Sort.Direction.DESC, "createdAt"));
+                break;
+            case "likes-asc":
+                sortObj = Sort.by(Sort.Direction.ASC, "likesCount")
+                        .and(Sort.by(Sort.Direction.DESC, "createdAt"));
+                break;
+            case "comments-desc":
+                sortObj = Sort.by(Sort.Direction.DESC, "commentsCount")
+                        .and(Sort.by(Sort.Direction.DESC, "createdAt"));
+                break;
+            case "comments-asc":
+                sortObj = Sort.by(Sort.Direction.ASC, "commentsCount")
+                        .and(Sort.by(Sort.Direction.DESC, "createdAt"));
+                break;
+            case "newest":
+            default:
+                sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+                break;
+        }
+
+        return PageRequest.of(page, size, sortObj);
     }
 }
