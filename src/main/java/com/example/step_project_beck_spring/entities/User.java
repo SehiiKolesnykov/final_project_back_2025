@@ -52,7 +52,6 @@ public class User implements UserDetails {
     @Column(name = "nick_name", nullable = false, unique = true, length = 20)
     private String nickName;
 
-    @NotBlank
     @Size(max = 160)
     @Column(name = "about_me", length = 160)
     private String aboutMe;

@@ -1,4 +1,3 @@
-// com/example/step_project_beck_spring/dto/UserPublicDTO.java
 package com.example.step_project_beck_spring.dto;
 
 import lombok.AllArgsConstructor;
