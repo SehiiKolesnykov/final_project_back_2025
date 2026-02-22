@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(),              // Email
                 user.getAvatarUrl(),          // avatarUrl
                 user.getBackgroundImgUrl(),   // backgroundImg (у DTO поле називається так у Entity - Url)
-                user.getNickName(),
+                user.getNickName() != null ? user.getNickName() : "TEST_NICK_FROM_CODE",
                 user.getFollowing() != null ? user.getFollowing().size() : 0,     // followingCount (поки що 0)
                 user.getFollowers() != null ? user.getFollowers().size() : 0,     // followersCount (поки що 0)
                 user.getPosts() != null ? user.getPosts().size() : 0,             // postsCount (поки що 0)
