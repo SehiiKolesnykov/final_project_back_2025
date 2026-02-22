@@ -108,6 +108,7 @@ public class UserController {
         dto.setEmail(user.getEmail());
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setBackgroundImg(user.getBackgroundImgUrl());
+        dto.setNickName(user.getNickName());
         dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
         dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
         dto.setPostsCount(user.getPosts() != null ? user.getPosts().size() : 0);
