@@ -1,4 +1,3 @@
-// src/main/java/com/example/step_project_beck_spring/config/WebSocketConfig.java
 package com.example.step_project_beck_spring.config;
 
 import org.springframework.context.annotation.Configuration;

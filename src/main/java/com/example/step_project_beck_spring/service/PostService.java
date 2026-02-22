@@ -237,6 +237,7 @@ public class PostService {
                 post.getAuthor().getFirstName(),
                 post.getAuthor().getLastName(),
                 post.getAuthor().getAvatarUrl(),
+                post.getAuthor().getNickName(),
                 userService.isFollowing(post.getAuthor())
         );
 

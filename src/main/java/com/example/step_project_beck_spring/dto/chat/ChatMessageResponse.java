@@ -11,7 +11,7 @@ public class ChatMessageResponse {
     private Long id;
     private Long threadId;
     private UUID senderId;
-    private String senderUsername;
+    private String senderNickName;
     private String content;
     private LocalDateTime createdAt;
     private String messageType;
@@ -20,12 +20,12 @@ public class ChatMessageResponse {
     public ChatMessageResponse() {
     }
 
-    public ChatMessageResponse(Long id, Long threadId, UUID senderId, String senderUsername,
-                              String content, LocalDateTime createdAt, String messageType) {
+    public ChatMessageResponse(Long id, Long threadId, UUID senderId, String senderNickName,
+                               String content, LocalDateTime createdAt, String messageType) {
         this.id = id;
         this.threadId = threadId;
         this.senderId = senderId;
-        this.senderUsername = senderUsername;
+        this.senderNickName = senderNickName;
         this.content = content;
         this.createdAt = createdAt;
         this.messageType = messageType;
@@ -36,7 +36,7 @@ public class ChatMessageResponse {
                 message.getId(),
                 message.getThread().getId(),
                 message.getSender().getId(),
-                message.getSender().getUsername(),
+                message.getSender().getNickName(),
                 message.getContent(),
                 message.getCreatedAt(),
                 message.getMessageType() != null ? message.getMessageType().name() : "TEXT"
@@ -72,12 +72,12 @@ public class ChatMessageResponse {
         this.senderId = senderId;
     }
 
-    public String getSenderUsername() {
-        return senderUsername;
+    public String getSenderNickName() {
+        return senderNickName;
     }
 
-    public void setSenderUsername(String senderUsername) {
-        this.senderUsername = senderUsername;
+    public void setSenderNickName(String senderNickName) {
+        this.senderNickName = senderNickName;
     }
 
     public String getContent() {
@@ -105,4 +105,3 @@ public class ChatMessageResponse {
     }
 
 }
-

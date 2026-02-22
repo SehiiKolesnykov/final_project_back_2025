@@ -10,12 +10,11 @@ public record UserSummaryDto(
         String firstName,
         String lastName,
         String avatarUrl,
+        String nickName,
         Boolean isFollowing
 ) {
-    // Конструктор з 4 параметрами
-    public UserSummaryDto(UUID id, String firstName, String lastName, String avatarUrl) {
-        this(id, firstName, lastName, avatarUrl, null);
+    // Конструктор з 5 параметрами
+    public UserSummaryDto(UUID id, String firstName, String lastName, String avatarUrl, String nickName) {
+        this(id, firstName, lastName, avatarUrl, nickName, null);
     }
 }
-
-

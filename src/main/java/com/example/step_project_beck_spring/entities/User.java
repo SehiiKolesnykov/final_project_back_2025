@@ -1,6 +1,8 @@
 package com.example.step_project_beck_spring.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -12,14 +14,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * Основна сутність користувача.
- * Реалізує UserDetails для сумісності з Spring Security.
- */
 @Entity
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_email", columnList = "email", unique = true),
-        @Index(name = "idx_user_firebase_uid", columnList = "firebase_uid", unique = true)
+        @Index(name = "idx_user_firebase_uid", columnList = "firebase_uid", unique = true),
+        @Index(name = "idx_user_nick_name", columnList = "nick_name", unique = true)
 })
 @Getter
 @Setter
@@ -47,6 +46,11 @@ public class User implements UserDetails {
 
     private String avatarUrl;
     private String backgroundImgUrl;
+
+    @NotBlank
+    @Size(max = 20)
+    @Column(name = "nick_name", nullable = false, unique = true, length = 20)
+    private String nickName;
 
     // Firebase UID — головний ідентифікатор користувача з Firebase
     @Column(name = "firebase_uid", unique = true, nullable = true)

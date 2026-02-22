@@ -1,4 +1,3 @@
-// src/main/java/com/example/step_project_beck_spring/service/JwtService.java
 package com.example.step_project_beck_spring.service;
 
 import com.example.step_project_beck_spring.entities.User;

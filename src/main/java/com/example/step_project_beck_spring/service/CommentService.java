@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -52,6 +51,7 @@ public class CommentService {
                 saved.getId(),
                 saved.getContent(),
                 saved.getAuthor().getId(),
+                saved.getAuthor().getNickName(),
                 saved.getPost().getId(),
                 saved.getCreatedAt(),
                 post.getCommentsCount()
@@ -76,6 +76,7 @@ public class CommentService {
                         c.getId(),
                         c.getContent(),
                         c.getAuthor().getId(),
+                        c.getAuthor().getNickName(),
                         c.getPost().getId(),
                         c.getCreatedAt(),
                         post.getCommentsCount()
@@ -83,6 +84,3 @@ public class CommentService {
                 .toList();
     }
 }
-
-
-

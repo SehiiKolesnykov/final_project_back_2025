@@ -5,21 +5,21 @@ import java.util.UUID;
 public class ChatContactResponse {
 
     private UUID id;
-    private String username;
+    private String nickName;
     private String email;
 
     public ChatContactResponse() {
     }
 
-    public ChatContactResponse(UUID id, String username) {
+    public ChatContactResponse(UUID id, String nickName) {
         this.id = id;
-        this.username = username;
+        this.nickName = nickName;
         this.email = null;
     }
 
-    public ChatContactResponse(UUID id, String username, String email) {
+    public ChatContactResponse(UUID id, String nickName, String email) {
         this.id = id;
-        this.username = username;
+        this.nickName = nickName;
         this.email = email;
     }
 
@@ -32,12 +32,12 @@ public class ChatContactResponse {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getNickName() {
+        return nickName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
     }
 
     public String getEmail() {
@@ -48,4 +48,3 @@ public class ChatContactResponse {
         this.email = email;
     }
 }
-

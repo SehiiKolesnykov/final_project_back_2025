@@ -1,4 +1,3 @@
-// src/main/java/com/example/step_project_beck_spring/service/AuthenticationService.java
 package com.example.step_project_beck_spring.service;
 
 import com.example.step_project_beck_spring.request.AuthResponse;
@@ -36,6 +35,17 @@ public class AuthenticationService {
             throw new RuntimeException("Email already taken / Цей email вже зайнятий");
         }
 
+        String nickName = request.nickName();
+        if (nickName == null || nickName.isBlank()) {
+            String emailPart = request.email().substring(0, request.email().indexOf('@'));
+            nickName = emailPart.length() > 19 ? emailPart.substring(0, 19) : emailPart;
+        }
+
+        // Check uniqueness
+        if (userRepository.existsByNickName(nickName)) {
+            throw new RuntimeException("Nickname already taken");
+        }
+
         UserRecord.CreateRequest createRequest = new UserRecord.CreateRequest()
                 .setEmail(request.email())
                 .setPassword(request.password())
@@ -54,6 +64,7 @@ public class AuthenticationService {
                 .lastName(request.lastName())
                 .email(request.email())
                 .birthDate(request.birthDate())
+                .nickName(nickName)
                 .firebaseUid(firebaseUser.getUid())
                 .build();
 

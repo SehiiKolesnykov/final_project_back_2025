@@ -28,7 +28,7 @@ public class NotificationService {
                 .type(NotificationType.NEW_POST)
                 .recipient(recipient)
                 .relatedEntityId(post.getId())
-                .message(post.getAuthor().getFirstName() + " " + post.getAuthor().getLastName()
+                .message(post.getAuthor().getNickName()
                         + " опублікував(-ла) новий пост")
                 .link("/posts/" + post.getId())
                 .build();
@@ -112,7 +112,3 @@ public class NotificationService {
         notificationRepository.delete(n);
     }
 }
-
-
-
-

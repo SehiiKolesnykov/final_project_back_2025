@@ -1,4 +1,5 @@
 package com.example.step_project_beck_spring.entities;
+
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;

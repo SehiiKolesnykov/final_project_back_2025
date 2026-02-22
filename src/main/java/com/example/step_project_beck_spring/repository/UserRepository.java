@@ -47,4 +47,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         WHERE u.id = :userId
         """)
     Optional<User> findByIdWithCollections(@Param("userId") UUID userId);
+
+    boolean existsByNickName(String nickName);
 }

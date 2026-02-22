@@ -1,6 +1,5 @@
 package com.example.step_project_beck_spring.controller;
 
-import com.example.step_project_beck_spring.dto.AuthResponse; // Перевір імпорт, у тебе може бути в пакеті request
 import com.example.step_project_beck_spring.request.LoginRequest;
 import com.example.step_project_beck_spring.request.RegisterRequest;
 import com.example.step_project_beck_spring.service.AuthenticationService;

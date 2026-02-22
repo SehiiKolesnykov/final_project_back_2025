@@ -1,7 +1,6 @@
-// src/main/java/com/example/step_project_beck_spring/request/RegisterRequest.java
 package com.example.step_project_beck_spring.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat; // Для форматування дати
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,5 +24,8 @@ public record RegisterRequest(
 
         @NotNull(message = "Birth date is required")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd.MM.yyyy")
-        LocalDate birthDate
+        LocalDate birthDate,
+
+        @Size(max = 20, message = "Nickname must be at most 20 characters")
+        String nickName
 ) {}

@@ -20,7 +20,7 @@ public class ChatThreadResponse {
     }
 
     public ChatThreadResponse(Long id, List<ChatContactResponse> participants,
-                             LocalDateTime createdAt, LocalDateTime updatedAt, Long unreadCount, ChatContactResponse otherParticipant) {
+                              LocalDateTime createdAt, LocalDateTime updatedAt, Long unreadCount, ChatContactResponse otherParticipant) {
         this.id = id;
         this.participants = participants;
         this.createdAt = createdAt;
@@ -31,14 +31,14 @@ public class ChatThreadResponse {
 
     public static ChatThreadResponse from(ChatThread thread, User currentUser, Long unreadCount) {
         List<ChatContactResponse> participants = thread.getParticipants().stream()
-                .map(user -> new ChatContactResponse(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail()))
                 .collect(Collectors.toList());
 
 
         ChatContactResponse otherParticipant = thread.getParticipants().stream()
                 .filter(user -> !user.getId().equals(currentUser.getId()))
                 .findFirst()
-                .map(user -> new ChatContactResponse(user.getId(), user.getUsername(), user.getEmail()))
+                .map(user -> new ChatContactResponse(user.getId(), user.getNickName(), user.getEmail()))
                 .orElse(null);
 
         return new ChatThreadResponse(
@@ -100,4 +100,3 @@ public class ChatThreadResponse {
         this.otherParticipant = otherParticipant;
     }
 }
-

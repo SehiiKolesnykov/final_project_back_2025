@@ -1,4 +1,3 @@
-// src/main/java/com/example/step_project_beck_spring/filter/JwtAuthenticationFilter.java
 package com.example.step_project_beck_spring.filter;
 
 import com.example.step_project_beck_spring.entities.User;
