@@ -22,6 +22,7 @@ public class LikeService {
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationSubscriptionService notificationSubscriptionService;
 
     /**
      * toggleLike Якщо користувач вже лайкнув пост толайк видаляється.
@@ -56,6 +57,7 @@ public class LikeService {
                     .user(user)
                     .build();
             likeRepository.save(like);
+            notificationSubscriptionService.notifyAboutLike(post, user);
             nowLiked = true;
         }
 

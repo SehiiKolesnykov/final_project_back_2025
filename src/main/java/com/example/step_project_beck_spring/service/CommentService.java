@@ -23,6 +23,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationSubscriptionService notificationSubscriptionService;
 
     @Transactional
     public CommentDto addComment(UUID postId, UUID userId, String content) {
@@ -42,6 +43,7 @@ public class CommentService {
 
         // Збереження коментаря в БД
         Comment saved = commentRepository.save(comment);
+        notificationSubscriptionService.notifyAboutComment(post, user, saved);
 
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);

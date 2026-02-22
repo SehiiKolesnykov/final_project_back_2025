@@ -58,7 +58,7 @@ public class ChatController {
             @ApiResponse(responseCode = "404", description = "Тред не знайдено")
     })
     @GetMapping("/thread/{threadId}/messages")
-    public ResponseEntity<List<ChatMessageResponse>> getMessages(@PathVariable Long threadId) {
+    public ResponseEntity<List<ChatMessageResponse>> getMessages(@PathVariable UUID threadId) {
         User currentUser = currentUserService.getCurrentUser();
         List<ChatMessageResponse> messages = chatService.getMessagesForThread(threadId, currentUser);
         return ResponseEntity.ok(messages);
@@ -71,7 +71,7 @@ public class ChatController {
             @ApiResponse(responseCode = "404", description = "Тред не знайдено")
     })
     @PostMapping("/thread/{threadId}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long threadId) {
+    public ResponseEntity<Void> markAsRead(@PathVariable UUID threadId) {
         User currentUser = currentUserService.getCurrentUser();
         chatService.markThreadAsRead(threadId, currentUser);
         return ResponseEntity.ok().build();
@@ -84,7 +84,7 @@ public class ChatController {
             @ApiResponse(responseCode = "403", description = "Користувач не є учасником треду")
     })
     @DeleteMapping("/thread/{threadId}")
-    public ResponseEntity<Void> deleteThread(@PathVariable Long threadId) {
+    public ResponseEntity<Void> deleteThread(@PathVariable UUID threadId) {
         User currentUser = currentUserService.getCurrentUser();
         chatService.deleteThread(threadId, currentUser);
         return ResponseEntity.ok().build();
@@ -97,7 +97,7 @@ public class ChatController {
             @ApiResponse(responseCode = "403", description = "Користувач не є автором повідомлення")
     })
     @DeleteMapping("/message/{messageId}")
-    public ResponseEntity<Void> deleteMessage(@PathVariable Long messageId) {
+    public ResponseEntity<Void> deleteMessage(@PathVariable UUID messageId) {
         User currentUser = currentUserService.getCurrentUser();
         chatService.deleteMessage(messageId, currentUser);
         return ResponseEntity.ok().build();

@@ -5,11 +5,12 @@ import com.example.step_project_beck_spring.entities.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ChatThreadResponse {
 
-    private Long id;
+    private UUID id;
     private List<ChatContactResponse> participants;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -19,7 +20,7 @@ public class ChatThreadResponse {
     public ChatThreadResponse() {
     }
 
-    public ChatThreadResponse(Long id, List<ChatContactResponse> participants,
+    public ChatThreadResponse(UUID id, List<ChatContactResponse> participants,
                               LocalDateTime createdAt, LocalDateTime updatedAt, Long unreadCount, ChatContactResponse otherParticipant) {
         this.id = id;
         this.participants = participants;
@@ -52,11 +53,11 @@ public class ChatThreadResponse {
     }
 
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 

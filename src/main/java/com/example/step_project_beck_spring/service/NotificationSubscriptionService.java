@@ -1,8 +1,7 @@
 package com.example.step_project_beck_spring.service;
 
-import com.example.step_project_beck_spring.entities.NotificationSubscription;
-import com.example.step_project_beck_spring.entities.Post;
-import com.example.step_project_beck_spring.entities.User;
+import com.example.step_project_beck_spring.entities.*;
+import com.example.step_project_beck_spring.enums.NotificationType;
 import com.example.step_project_beck_spring.repository.NotificationSubscriptionRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-//Сервіс для керування підписками на сповіщення про нові пости.
 @Service
 @RequiredArgsConstructor
 public class NotificationSubscriptionService {
+
     private final NotificationSubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
@@ -45,18 +44,99 @@ public class NotificationSubscriptionService {
         subscriptionRepository.deleteBySubscriberIdAndTargetUserId(subscriberId, targetUserId);
     }
 
-    //Викликається при створенні нового поста. Розсилає сповіщення всім підписникам автора.
+    // ──── NEW_POST ──── (залишаємо як було)
     @Transactional
     public void notifySubscribersAboutNewPost(Post post) {
         List<NotificationSubscription> subscribers =
                 subscriptionRepository.findByTargetUserId(post.getAuthor().getId());
-        for (NotificationSubscription subscription : subscribers) {
-            if (subscription.isNotifyOnAllPosts()) {
-                notificationService.createNewPostNotification(subscription.getSubscriber(), post);
+        for (NotificationSubscription sub : subscribers) {
+            if (sub.isNotifyOnAllPosts()) {
+                notificationService.createNotification(
+                        sub.getSubscriber(),
+                        post.getAuthor(),
+                        NotificationType.NEW_POST,
+                        post.getId(),
+                        post.getAuthor().getNickName() + " опублікував(-ла) новий пост",
+                        "/posts/" + post.getId()
+                );
             }
         }
     }
+
+    // ──── LIKE ────
+    @Transactional
+    public void notifyAboutLike(Post post, User liker) {
+        User author = post.getAuthor();
+        if (author.equals(liker)) return; // не сповіщаємо самого себе
+
+        List<NotificationSubscription> subs = subscriptionRepository.findByTargetUserId(author.getId());
+        for (NotificationSubscription sub : subs) {
+            notificationService.createNotification(
+                    sub.getSubscriber(),
+                    liker,
+                    NotificationType.LIKE,
+                    post.getId(),
+                    liker.getNickName() + " поставив лайк під твоїм постом",
+                    "/posts/" + post.getId()
+            );
+        }
+    }
+
+    // ──── COMMENT ────
+    @Transactional
+    public void notifyAboutComment(Post post, User commenter, Comment comment) {
+        User author = post.getAuthor();
+        if (author.equals(commenter)) return;
+
+        List<NotificationSubscription> subs = subscriptionRepository.findByTargetUserId(author.getId());
+        for (NotificationSubscription sub : subs) {
+            notificationService.createNotification(
+                    sub.getSubscriber(),
+                    commenter,
+                    NotificationType.COMMENT,
+                    post.getId(),
+                    commenter.getNickName() + " залишив коментар під твоїм постом",
+                    "/posts/" + post.getId()
+            );
+        }
+    }
+
+    // ──── FOLLOW ────
+    @Transactional
+    public void notifyAboutFollow(User followed, User follower) {
+        if (followed.equals(follower)) return;
+
+        notificationService.createNotification(
+                followed,
+                follower,
+                NotificationType.FOLLOW,
+                follower.getId(),
+                follower.getNickName() + " підписався на тебе",
+                "/profile/" + follower.getId()
+        );
+    }
+
+    // ──── MESSAGE ──── (для чату — сповіщаємо отримувача)
+    @Transactional
+    public void notifyAboutMessage(ChatMessage message) {
+        User sender = message.getSender();
+        ChatThread thread = message.getThread();
+
+        // Знаходимо отримувача (той, хто не sender)
+        User recipient = thread.getParticipants().stream()
+                .filter(u -> !u.getId().equals(sender.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (recipient == null) return;
+
+        notificationService.createNotification(
+                recipient,
+                sender,
+                NotificationType.MESSAGE,
+                message.getId(),
+                sender.getNickName() + " надіслав тобі повідомлення",
+                "/chat/" + thread.getId()
+        );
+    }
 }
-
-
-

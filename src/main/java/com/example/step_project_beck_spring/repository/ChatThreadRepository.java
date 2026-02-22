@@ -8,8 +8,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface ChatThreadRepository extends JpaRepository<ChatThread, Long> {
+public interface ChatThreadRepository extends JpaRepository<ChatThread, UUID> {
 
     @Query("""
         SELECT t FROM ChatThread t 

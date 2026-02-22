@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class ChatMessageRequest {
 
-    private Long threadId;
+    private UUID threadId;
 
     private UUID recipientUserId;
 
@@ -18,17 +18,17 @@ public class ChatMessageRequest {
     public ChatMessageRequest() {
     }
 
-    public ChatMessageRequest(Long threadId, UUID recipientUserId, String content) {
+    public ChatMessageRequest(UUID threadId, UUID recipientUserId, String content) {
         this.threadId = threadId;
         this.recipientUserId = recipientUserId;
         this.content = content;
     }
 
-    public Long getThreadId() {
+    public UUID getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(Long threadId) {
+    public void setThreadId(UUID threadId) {
         this.threadId = threadId;
     }
 

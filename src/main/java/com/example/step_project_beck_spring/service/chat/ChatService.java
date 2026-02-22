@@ -6,6 +6,7 @@ import com.example.step_project_beck_spring.dto.chat.ChatThreadResponse;
 import com.example.step_project_beck_spring.entities.User;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface ChatService {
 
@@ -13,14 +14,14 @@ public interface ChatService {
 
     List<ChatThreadResponse> getThreadsForUser(User user);
 
-    List<ChatMessageResponse> getMessagesForThread(Long threadId, User user);
+    List<ChatMessageResponse> getMessagesForThread(UUID threadId, User user);
 
     ChatMessageResponse sendMessage(ChatMessageRequest request);
     
-    void deleteThread(Long threadId, User user);
+    void deleteThread(UUID threadId, User user);
     
-    void deleteMessage(Long messageId, User user);
+    void deleteMessage(UUID messageId, User user);
     
-    void markThreadAsRead(Long threadId, User user);
+    void markThreadAsRead(UUID threadId, User user);
 }
 

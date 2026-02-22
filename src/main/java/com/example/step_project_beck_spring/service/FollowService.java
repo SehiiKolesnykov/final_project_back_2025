@@ -18,6 +18,7 @@ public class FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final NotificationSubscriptionService notificationSubscriptionService;
 
     //Підписка одного користувача на іншого.
     @Transactional
@@ -41,6 +42,7 @@ public class FollowService {
                 .build();
 
         followRepository.save(follow);
+        notificationSubscriptionService.notifyAboutFollow(following, follower);
     }
     //Відписка користувача від іншого користувача.
     @Transactional

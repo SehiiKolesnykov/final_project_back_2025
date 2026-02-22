@@ -11,6 +11,7 @@ import com.example.step_project_beck_spring.repository.ChatMessageRepository;
 import com.example.step_project_beck_spring.repository.ChatReadStatusRepository;
 import com.example.step_project_beck_spring.repository.ChatThreadRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
+import com.example.step_project_beck_spring.service.NotificationSubscriptionService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.PersistenceContext;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +33,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ChatReadStatusRepository readStatusRepository;
+    private final NotificationSubscriptionService notificationSubscriptionService;
     
     @PersistenceContext
     private EntityManager entityManager;
@@ -38,11 +41,13 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(ChatThreadRepository threadRepository,
                            ChatMessageRepository messageRepository,
                            UserRepository userRepository,
-                           ChatReadStatusRepository readStatusRepository) {
+                           ChatReadStatusRepository readStatusRepository,
+                           NotificationSubscriptionService notificationSubscriptionService) {
         this.threadRepository = threadRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.readStatusRepository = readStatusRepository;
+        this.notificationSubscriptionService = notificationSubscriptionService;
     }
 
     @Override
@@ -68,7 +73,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public List<ChatMessageResponse> getMessagesForThread(Long threadId, User currentUser) {
+    public List<ChatMessageResponse> getMessagesForThread(UUID threadId, User currentUser) {
         ChatThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));
         validateParticipation(thread, currentUser);
@@ -160,6 +165,7 @@ public class ChatServiceImpl implements ChatService {
             System.out.println("Message type: " + message.getMessageType());
             
             message = messageRepository.save(message);
+            notificationSubscriptionService.notifyAboutMessage(message);
             System.out.println("Message saved with ID: " + message.getId());
             
             // Явно виконуємо flush, щоб переконатися, що зміни збережені
@@ -285,7 +291,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public void deleteThread(Long threadId, User user) {
+    public void deleteThread(UUID threadId, User user) {
         ChatThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));
         
@@ -311,7 +317,7 @@ public class ChatServiceImpl implements ChatService {
     
     @Override
     @Transactional
-    public void deleteMessage(Long messageId, User user) {
+    public void deleteMessage(UUID messageId, User user) {
         ChatMessage message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat message not found: " + messageId));
         
@@ -330,7 +336,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public void markThreadAsRead(Long threadId, User user) {
+    public void markThreadAsRead(UUID threadId, User user) {
         ChatThread thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> new EntityNotFoundException("Chat thread not found: " + threadId));
         validateParticipation(thread, user);

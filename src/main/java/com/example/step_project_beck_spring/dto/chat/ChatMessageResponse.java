@@ -8,8 +8,8 @@ import java.util.UUID;
 
 public class ChatMessageResponse {
 
-    private Long id;
-    private Long threadId;
+    private UUID id;
+    private UUID threadId;
     private UUID senderId;
     private String senderNickName;
     private String content;
@@ -20,7 +20,7 @@ public class ChatMessageResponse {
     public ChatMessageResponse() {
     }
 
-    public ChatMessageResponse(Long id, Long threadId, UUID senderId, String senderNickName,
+    public ChatMessageResponse(UUID id, UUID threadId, UUID senderId, String senderNickName,
                                String content, LocalDateTime createdAt, String messageType) {
         this.id = id;
         this.threadId = threadId;
@@ -48,19 +48,19 @@ public class ChatMessageResponse {
     }
 
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public Long getThreadId() {
+    public UUID getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(Long threadId) {
+    public void setThreadId(UUID threadId) {
         this.threadId = threadId;
     }
 

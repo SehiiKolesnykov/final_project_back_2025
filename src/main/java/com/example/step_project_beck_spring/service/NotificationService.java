@@ -8,6 +8,7 @@ import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.enums.NotificationType;
 import com.example.step_project_beck_spring.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -15,36 +16,68 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
+
     private final NotificationRepository notificationRepository;
     private final NotificationWebSocketService notificationWebSocketService;
 
-    //Створює сповіщення про новий пост та пушить його по WebSocket.
+    /**
+     * Універсальний метод для створення будь-якого сповіщення
+     * Використовується для всіх типів: NEW_POST, LIKE, COMMENT, FOLLOW, MESSAGE
+     */
     @Transactional
-    public void createNewPostNotification(User recipient, Post post) {
-        Notification notification = Notification.builder()
-                .type(NotificationType.NEW_POST)
-                .recipient(recipient)
-                .relatedEntityId(post.getId())
-                .message(post.getAuthor().getNickName()
-                        + " опублікував(-ла) новий пост")
-                .link("/posts/" + post.getId())
-                .build();
-        Notification saved = notificationRepository.save(notification);
+    public Notification createNotification(
+            User recipient,
+            User actor,                // хто викликав дію (той, хто лайкнув, написав, підписався тощо)
+            NotificationType type,
+            UUID relatedEntityId,      // ID поста, коментаря, повідомлення, користувача тощо
+            String message,
+            String link) {
 
-        // Пушимо через WebSocket (як DTO)
+        Notification notification = Notification.builder()
+                .type(type)
+                .recipient(recipient)
+                .relatedEntityId(relatedEntityId)
+                .message(message)
+                .link(link)
+                .isRead(false)
+                .build();
+
+        Notification saved = notificationRepository.save(notification);
+        log.info("Створено сповіщення: id={}, type={}, recipient={}, message={}",
+                saved.getId(), type, recipient.getEmail(), message);
+
+        // Відправляємо через WebSocket
         NotificationDto dto = toDto(saved);
         notificationWebSocketService.sendNotificationToUser(recipient.getId(), dto);
+
+        return saved;
     }
 
-    //Отримати сторінку сповіщень для користувача.
+    // ──── Залишкові методи для сумісності (можна видалити після повного переходу) ────
+
+    @Deprecated
+    public void createNewPostNotification(User recipient, Post post) {
+        createNotification(
+                recipient,
+                post.getAuthor(),
+                NotificationType.NEW_POST,
+                post.getId(),
+                post.getAuthor().getNickName() + " опублікував(-ла) новий пост",
+                "/posts/" + post.getId()
+        );
+    }
+
+    // ──── Отримання сповіщень користувача з пагінацією ────
     @Transactional(readOnly = true)
     public NotificationPageDto getNotifications(UUID recipientId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size);
         Page<Notification> notificationPage =
                 notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId, pageable);
+
         return new NotificationPageDto(
                 notificationPage.getContent().stream().map(this::toDto).toList(),
                 notificationPage.getNumber(),
@@ -55,41 +88,63 @@ public class NotificationService {
         );
     }
 
-    //Позначити конкретну нотифікацію як прочитану.
+    // ──── Позначити одне сповіщення як прочитане ────
     @Transactional
     public void markAsRead(UUID notificationId, UUID recipientId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Сповіщення не знайдено"));
+
         if (!notification.getRecipient().getId().equals(recipientId)) {
             throw new IllegalArgumentException("Немає доступу до цього сповіщення");
         }
+
         if (!notification.isRead()) {
             notification.setRead(true);
             notificationRepository.save(notification);
+            log.info("Сповіщення {} позначено як прочитане для користувача {}", notificationId, recipientId);
         }
     }
 
-    //Позначити всі сповіщення користувача як прочитані.
+    // ──── Позначити всі сповіщення як прочитані ────
     @Transactional
     public void markAllAsRead(UUID recipientId) {
-        PageRequest pageRequest = PageRequest.of(0, 1000); // якщо дуже багато — подумати про bulk update
-        Page<Notification> page =
-                notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId, pageRequest);
+        // Для ефективності можна зробити bulk update, але поки що через сторінки
+        PageRequest pageRequest = PageRequest.of(0, 1000);
+        Page<Notification> page = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId, pageRequest);
+
         page.forEach(n -> {
             if (!n.isRead()) {
                 n.setRead(true);
             }
         });
+
         notificationRepository.saveAll(page.getContent());
+        log.info("Всі сповіщення позначено як прочитані для користувача {}", recipientId);
     }
 
-    //Кількість непрочитаних сповіщень.
+    // ──── Кількість непрочитаних сповіщень ────
     @Transactional(readOnly = true)
     public long countUnread(UUID recipientId) {
-        return notificationRepository.countByRecipientIdAndIsReadFalse(recipientId);
+        long count = notificationRepository.countByRecipientIdAndIsReadFalse(recipientId);
+        log.debug("Непрочитаних сповіщень для {}: {}", recipientId, count);
+        return count;
     }
 
-    //Маппер Notification -> NotificationDto.
+    // ──── Видалення одного сповіщення ────
+    @Transactional
+    public void deleteNotification(UUID notificationId, UUID recipientId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("Сповіщення не знайдено"));
+
+        if (!notification.getRecipient().getId().equals(recipientId)) {
+            throw new IllegalArgumentException("Немає доступу");
+        }
+
+        notificationRepository.delete(notification);
+        log.info("Сповіщення {} видалено для користувача {}", notificationId, recipientId);
+    }
+
+    // ──── Маппер Notification → DTO ────
     private NotificationDto toDto(Notification notification) {
         return new NotificationDto(
                 notification.getId(),
@@ -99,16 +154,5 @@ public class NotificationService {
                 notification.isRead(),
                 notification.getCreatedAt()
         );
-    }
-
-    // видалення сповіщень
-    @Transactional
-    public void deleteNotification(UUID notificationId, UUID recipientId) {
-        Notification n = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("Сповіщення не знайдено"));
-        if (!n.getRecipient().getId().equals(recipientId)) {
-            throw new IllegalArgumentException("Немає доступу");
-        }
-        notificationRepository.delete(n);
     }
 }
