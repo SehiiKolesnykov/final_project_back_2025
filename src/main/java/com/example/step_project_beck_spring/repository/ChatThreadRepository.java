@@ -13,15 +13,15 @@ import java.util.UUID;
 public interface ChatThreadRepository extends JpaRepository<ChatThread, UUID> {
 
     @Query("""
-        SELECT DISTINCT t FROM ChatThread t 
+        SELECT t FROM ChatThread t 
         LEFT JOIN FETCH t.participants p 
         WHERE p = :user 
         ORDER BY CASE WHEN t.updatedAt IS NOT NULL THEN t.updatedAt ELSE t.createdAt END DESC
-        """)
+        """)  // ← Прибрано DISTINCT, доданий FETCH для оптимізації
     List<ChatThread> findAllByParticipant(@Param("user") User user);
 
     @Query("""
-            SELECT DISTINCT t FROM ChatThread t
+            SELECT t FROM ChatThread t
             LEFT JOIN FETCH t.participants
             JOIN t.participants p1
             JOIN t.participants p2
