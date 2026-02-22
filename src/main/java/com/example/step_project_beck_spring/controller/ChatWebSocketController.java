@@ -9,12 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-
-import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -25,18 +21,16 @@ public class ChatWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload ChatMessageRequest request,
-                                  StompHeaderAccessor headerAccessor) {
+    public void handleChatMessage(
+            @Payload ChatMessageRequest request,
+            @AuthenticationPrincipal User currentUser  // ← тепер беремо з SecurityContext!
+    ) {
         try {
-            log.info("handleChatMessage: request received for threadId={}, recipient={}",
-                    request.getThreadId(), request.getRecipientUserId());
+            log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
+                    request.getThreadId(), request.getRecipientUserId(), currentUser.getEmail());
 
-            User user = extractUser(headerAccessor);
-            if (user == null) {
-                throw new IllegalStateException("User not authenticated");
-            }
-
-            request.setSenderUserId(user.getId());
+            // Встановлюємо sender з автентифікованого користувача
+            request.setSenderUserId(currentUser.getId());
 
             ChatMessageResponse response = chatService.sendMessage(request);
 
@@ -48,24 +42,5 @@ public class ChatWebSocketController {
             log.error("Error in handleChatMessage: {}", e.getMessage(), e);
             throw e;
         }
-    }
-
-    // Утилітний метод для витягування User з header/security context
-    private User extractUser(StompHeaderAccessor headerAccessor) {
-        Authentication auth = null;
-
-        if (headerAccessor != null && headerAccessor.getUser() instanceof Authentication principalAuth) {
-            auth = principalAuth;
-        }
-
-        if (auth == null) {
-            auth = SecurityContextHolder.getContext().getAuthentication();
-        }
-
-        if (auth != null && auth.getPrincipal() instanceof User user) {
-            return user;
-        }
-
-        return null;
     }
 }
