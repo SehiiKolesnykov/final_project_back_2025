@@ -47,6 +47,7 @@ public class UserServiceImpl implements UserService {
         if (request.avatarUrl() != null) user.setAvatarUrl(request.avatarUrl());
         if (request.backgroundImgUrl() != null) user.setBackgroundImgUrl(request.backgroundImgUrl());
         if (request.birthDate() != null) user.setBirthDate(request.birthDate());
+        if (request.aboutMe() != null) user.setAboutMe(request.aboutMe());
 
         userRepository.save(user);
     }

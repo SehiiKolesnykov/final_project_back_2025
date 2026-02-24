@@ -7,5 +7,6 @@ public record UpdateUserRequest(
         String lastName,
         String avatarUrl,
         String backgroundImgUrl,
-        LocalDate birthDate
+        LocalDate birthDate,
+        String aboutMe
 ) {}
