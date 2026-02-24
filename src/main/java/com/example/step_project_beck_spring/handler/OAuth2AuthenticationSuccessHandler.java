@@ -6,6 +6,8 @@ import com.example.step_project_beck_spring.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -33,16 +35,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             log.info("=== Початок обробки успішної Google авторизації ===");
 
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-            log.info("Отримано дані від Google: principal class = {}", oAuth2User.getClass().getName());
-
             String googleId = oAuth2User.getAttribute("sub");
             String email = oAuth2User.getAttribute("email");
             String firstName = oAuth2User.getAttribute("given_name");
             String lastName = oAuth2User.getAttribute("family_name");
             String picture = oAuth2User.getAttribute("picture");
-
-            log.info("Google дані: googleId={}, email={}, name={} {}, picture={}",
-                    googleId, email, firstName, lastName, picture);
 
             if (email == null) {
                 log.error("Email від Google відсутній");
@@ -62,17 +59,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                 log.info("Створюємо нового користувача через Google");
 
                                 String nickName = email.substring(0, email.indexOf('@'));
-                                if (nickName.length() > 19) {
-                                    nickName = nickName.substring(0, 19);
-                                }
+                                if (nickName.length() > 19) nickName = nickName.substring(0, 19);
 
                                 int counter = 1;
                                 String baseNick = nickName;
                                 while (userRepository.existsByNickName(nickName)) {
                                     nickName = baseNick + "_" + counter++;
-                                    if (nickName.length() > 20) {
-                                        nickName = nickName.substring(0, 20);
-                                    }
+                                    if (nickName.length() > 20) nickName = nickName.substring(0, 20);
                                 }
 
                                 User newUser = User.builder()
@@ -82,6 +75,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                         .lastName(lastName != null ? lastName : "User")
                                         .avatarUrl(picture)
                                         .nickName(nickName)
+                                        .aboutMe("")
                                         .birthDate(null)
                                         .firebaseUid(null)
                                         .createdAt(LocalDateTime.now())
@@ -90,18 +84,29 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                 return userRepository.save(newUser);
                             }));
 
-            log.info("Користувач готовий: id={}, email={}", user.getId(), user.getEmail());
-
             String jwt = jwtService.generateToken(user, true);
-            log.info("JWT успішно згенеровано");
 
-            // Редирект на фронт з токеном у query-параметрі
-            String redirectUrl = "https://widi-rho.vercel.app/auth?token=" + jwt +
+            // 1. Встановлюємо HttpOnly куку через ResponseCookie (з SameSite)
+            ResponseCookie cookie = ResponseCookie.from("jwt", jwt)
+                    .httpOnly(true)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(7 * 24 * 60 * 60)
+                    .sameSite("None")
+                    .build();
+
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            log.info("HttpOnly кука jwt з SameSite=None встановлена");
+
+            // 2. Редирект з токеном у query для фронту (WebSocket)
+            String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
+            String redirectUrl = "https://widi-rho.vercel.app/auth" +
+                    "?token=" + jwt +
                     "&userId=" + user.getId() +
-                    "&email=" + URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
+                    "&email=" + encodedEmail;
 
-            log.info("Редирект на: {}", redirectUrl);
-            response.sendRedirect(redirectUrl);
+            log.info("Редирект на фронт з токеном у query: {}", redirectUrl);
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         } catch (Exception e) {
             log.error("Помилка в OAuth2 success handler", e);
