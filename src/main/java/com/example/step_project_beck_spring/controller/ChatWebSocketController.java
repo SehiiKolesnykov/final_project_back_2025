@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
@@ -36,9 +37,12 @@ public class ChatWebSocketController {
             String topic = "/topic/chat/" + response.getThreadId();
             messagingTemplate.convertAndSend(topic, response);
 
+            log.info("SecurityContext at controller: {}", SecurityContextHolder.getContext().getAuthentication());
+
             log.info("Message sent to topic: {}, messageId={}", topic, response.getId());
         } catch (Exception e) {
             log.error("Error in handleChatMessage: {}", e.getMessage(), e);
+            log.info("SecurityContext at controller: {}", SecurityContextHolder.getContext().getAuthentication());
             throw e;
         }
     }
