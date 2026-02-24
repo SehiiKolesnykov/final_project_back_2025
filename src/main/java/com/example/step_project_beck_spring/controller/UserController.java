@@ -125,10 +125,9 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Не авторизовано")
     })
     @PatchMapping("/nickName")
-    public ResponseEntity<UserPublicDTO> updateNickName(@RequestBody UpdateNickNameRequest request) {
+    public ResponseEntity<String> updateNickName(@RequestBody UpdateNickNameRequest request) {
         userService.updateNickName(request.nickName());
-        User updatedUser = currentUserService.getCurrentUser();
-        return ResponseEntity.ok(mapToPublicDTO(updatedUser));
+        return ResponseEntity.ok("Нікнейм успішно змінено");
     }
 
 
