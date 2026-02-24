@@ -23,11 +23,17 @@ public class ChatWebSocketController {
     @MessageMapping("/chat/send")
     public void handleChatMessage(
             @Payload ChatMessageRequest request,
-            @AuthenticationPrincipal User currentUser  // Автоматично з SecurityContext
+            @AuthenticationPrincipal User currentUser  // ← Додаємо саме сюди!
     ) {
         try {
             log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
-                    request.getThreadId(), request.getRecipientUserId(), currentUser.getEmail());
+                    request.getThreadId(), request.getRecipientUserId(),
+                    currentUser != null ? currentUser.getEmail() : "null");
+
+            if (currentUser == null) {
+                log.error("Current user is null in handleChatMessage!");
+                throw new IllegalStateException("User not authenticated");
+            }
 
             request.setSenderUserId(currentUser.getId());
 

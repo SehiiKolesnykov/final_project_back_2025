@@ -70,9 +70,11 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
                         user, null, user.getAuthorities()
                 );
 
+                // Очищаємо контекст (важливо для багатопоточності WebSocket)
+                SecurityContextHolder.clearContext();
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                // передаємо Authentication як Principal
+                // Передаємо повний Authentication як Principal
                 accessor.setUser(auth);
 
                 log.info("SUCCESS: Authenticated user {} for command {}", user.getEmail(), accessor.getCommand());
