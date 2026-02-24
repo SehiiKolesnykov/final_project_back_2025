@@ -23,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -124,6 +125,7 @@ public class ChatServiceImpl implements ChatService {
             message.setSender(sender);
             message.setContent(request.getContent().trim());
             message.setMessageType(ChatMessage.MessageType.TEXT);
+            message.setCreatedAt(LocalDateTime.now());
 
             message = messageRepository.save(message);
 

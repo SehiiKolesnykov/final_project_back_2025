@@ -1,6 +1,7 @@
 package com.example.step_project_beck_spring.dto.chat;
 
 import com.example.step_project_beck_spring.entities.ChatMessage;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,9 +12,12 @@ public class ChatMessageResponse {
     private UUID threadId;
     private UUID senderId;
     private String senderNickName;
-    private String senderAvatarUrl;  // ← Додано
+    private String senderAvatarUrl;
     private String content;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private LocalDateTime createdAt;
+
     private String messageType;
 
     public ChatMessageResponse() {
@@ -37,7 +41,7 @@ public class ChatMessageResponse {
                 message.getThread().getId(),
                 message.getSender().getId(),
                 message.getSender().getNickName(),
-                message.getSender().getAvatarUrl(),  // ← Додано
+                message.getSender().getAvatarUrl(),
                 message.getContent(),
                 message.getCreatedAt(),
                 message.getMessageType() != null ? message.getMessageType().name() : "TEXT"
