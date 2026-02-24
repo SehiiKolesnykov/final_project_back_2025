@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 
 @Slf4j
@@ -21,19 +21,13 @@ public class ChatWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat/send")
-    public void handleChatMessage(
-            @Payload ChatMessageRequest request,
-            @AuthenticationPrincipal User currentUser  // ← Додаємо саме сюди!
-    ) {
+    public void handleChatMessage(@Payload ChatMessageRequest request) {
         try {
-            log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
-                    request.getThreadId(), request.getRecipientUserId(),
-                    currentUser != null ? currentUser.getEmail() : "null");
+            // Витягуємо користувача з SecurityContext (встановлено в інтерсепторі)
+            User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-            if (currentUser == null) {
-                log.error("Current user is null in handleChatMessage!");
-                throw new IllegalStateException("User not authenticated");
-            }
+            log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
+                    request.getThreadId(), request.getRecipientUserId(), currentUser.getEmail());
 
             request.setSenderUserId(currentUser.getId());
 
