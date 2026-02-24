@@ -11,4 +11,5 @@ public interface UserService {
     UserPublicDTO getUserByEmail(String email);
     void updateProfile(UpdateUserRequest request);
     Boolean isFollowing(User user);
+    void updateNickName(String newNickName);
 }

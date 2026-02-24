@@ -1,5 +1,6 @@
 package com.example.step_project_beck_spring.controller;
 
+import com.example.step_project_beck_spring.dto.UpdateNickNameRequest;
 import com.example.step_project_beck_spring.dto.UpdateUserRequest;
 import com.example.step_project_beck_spring.dto.UserPublicDTO;
 import com.example.step_project_beck_spring.entities.User;
@@ -116,4 +117,19 @@ public class UserController {
         dto.setFollowing(userService.isFollowing(user));
         return dto;
     }
+
+    @Operation(summary = "Змінити нікнейм користувача", description = "Змінює унікальний нікнейм поточного користувача")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Нікнейм успішно змінено"),
+            @ApiResponse(responseCode = "400", description = "Невірний або зайнятий нікнейм"),
+            @ApiResponse(responseCode = "401", description = "Не авторизовано")
+    })
+    @PatchMapping("/nickName")
+    public ResponseEntity<UserPublicDTO> updateNickName(@RequestBody UpdateNickNameRequest request) {
+        userService.updateNickName(request.nickName());
+        User updatedUser = currentUserService.getCurrentUser();
+        return ResponseEntity.ok(mapToPublicDTO(updatedUser));
+    }
+
+
 }

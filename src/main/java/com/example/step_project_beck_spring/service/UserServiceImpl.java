@@ -5,6 +5,7 @@ import com.example.step_project_beck_spring.dto.UserPublicDTO;
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.FollowRepository;
 import com.example.step_project_beck_spring.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -83,5 +84,35 @@ public class UserServiceImpl implements UserService {
         );
 
         return isFollowing;
+    }
+
+    @Override
+    @Transactional
+    public void updateNickName(String newNickName) {
+        if (newNickName == null || newNickName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Нікнейм не може бути порожнім");
+        }
+
+        String trimmedNick = newNickName.trim();
+
+        if (trimmedNick.length() < 3 || trimmedNick.length() > 20) {
+            throw new IllegalArgumentException("Нікнейм повинен бути від 3 до 20 символів");
+        }
+
+        // Перевірка на заборонені символи (можна розширити)
+        if (!trimmedNick.matches("^[a-zA-Z0-9_]+$")) {
+            throw new IllegalArgumentException("Нікнейм може містити лише літери, цифри та підкреслення");
+        }
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        // Перевірка, чи нікнейм вже зайнятий іншим користувачем
+        if (userRepository.existsByNickName(trimmedNick) &&
+                !trimmedNick.equals(currentUser.getNickName())) {
+            throw new IllegalArgumentException("Нікнейм вже зайнятий");
+        }
+
+        currentUser.setNickName(trimmedNick);
+        userRepository.save(currentUser);
     }
 }
