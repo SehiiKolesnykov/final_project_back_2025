@@ -33,7 +33,6 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
         log.info("=== STOMP preSend START ===");
         log.info("Command: {}", accessor.getCommand());
 
-        // Обробляємо CONNECT і SEND
         if (StompCommand.CONNECT.equals(accessor.getCommand()) ||
                 StompCommand.SEND.equals(accessor.getCommand())) {
 
@@ -66,12 +65,15 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
                     throw new IllegalStateException("Invalid JWT token");
                 }
 
+                // Створюємо автентифікацію
                 Authentication auth = new UsernamePasswordAuthenticationToken(
                         user, null, user.getAuthorities()
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                accessor.setUser(() -> user.getEmail());
+
+                // передаємо Authentication як Principal
+                accessor.setUser(auth);
 
                 log.info("SUCCESS: Authenticated user {} for command {}", user.getEmail(), accessor.getCommand());
 
