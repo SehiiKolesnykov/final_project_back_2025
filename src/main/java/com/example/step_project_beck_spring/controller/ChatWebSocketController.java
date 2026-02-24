@@ -10,7 +10,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 @Slf4j
@@ -22,10 +22,18 @@ public class ChatWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat/send")
-    public void handleChatMessage(@Payload ChatMessageRequest request) {
+    public void handleChatMessage(
+            @Payload ChatMessageRequest request,
+            StompHeaderAccessor headerAccessor  // ← Додаємо цей параметр
+    ) {
         try {
-            // Витягуємо користувача з SecurityContext (встановлено в інтерсепторі)
-            User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            // Витягуємо користувача з сесії STOMP (збережений в інтерсепторі)
+            User currentUser = (User) headerAccessor.getSessionAttributes().get("currentUser");
+
+            if (currentUser == null) {
+                log.error("No currentUser in STOMP session attributes!");
+                throw new IllegalStateException("User not found in STOMP session");
+            }
 
             log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
                     request.getThreadId(), request.getRecipientUserId(), currentUser.getEmail());
@@ -37,12 +45,9 @@ public class ChatWebSocketController {
             String topic = "/topic/chat/" + response.getThreadId();
             messagingTemplate.convertAndSend(topic, response);
 
-            log.info("SecurityContext at controller: {}", SecurityContextHolder.getContext().getAuthentication());
-
             log.info("Message sent to topic: {}, messageId={}", topic, response.getId());
         } catch (Exception e) {
             log.error("Error in handleChatMessage: {}", e.getMessage(), e);
-            log.info("SecurityContext at controller: {}", SecurityContextHolder.getContext().getAuthentication());
             throw e;
         }
     }
