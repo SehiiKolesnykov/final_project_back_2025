@@ -23,13 +23,12 @@ public class ChatWebSocketController {
     @MessageMapping("/chat/send")
     public void handleChatMessage(
             @Payload ChatMessageRequest request,
-            @AuthenticationPrincipal User currentUser  // ← тепер беремо з SecurityContext!
+            @AuthenticationPrincipal User currentUser  // Автоматично з SecurityContext
     ) {
         try {
             log.info("handleChatMessage: request received for threadId={}, recipient={}, from user={}",
                     request.getThreadId(), request.getRecipientUserId(), currentUser.getEmail());
 
-            // Встановлюємо sender з автентифікованого користувача
             request.setSenderUserId(currentUser.getId());
 
             ChatMessageResponse response = chatService.sendMessage(request);

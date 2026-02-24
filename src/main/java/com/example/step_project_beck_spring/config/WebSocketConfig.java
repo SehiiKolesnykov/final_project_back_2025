@@ -1,6 +1,5 @@
 package com.example.step_project_beck_spring.config;
 
-import com.example.step_project_beck_spring.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
