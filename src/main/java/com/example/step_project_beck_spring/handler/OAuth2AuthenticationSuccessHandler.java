@@ -3,6 +3,7 @@ package com.example.step_project_beck_spring.handler;
 import com.example.step_project_beck_spring.entities.User;
 import com.example.step_project_beck_spring.repository.UserRepository;
 import com.example.step_project_beck_spring.service.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -31,16 +35,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             log.info("=== Початок обробки успішної Google авторизації ===");
 
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-            log.info("Отримано дані від Google: principal class = {}", oAuth2User.getClass().getName());
-
             String googleId = oAuth2User.getAttribute("sub");
             String email = oAuth2User.getAttribute("email");
             String firstName = oAuth2User.getAttribute("given_name");
             String lastName = oAuth2User.getAttribute("family_name");
             String picture = oAuth2User.getAttribute("picture");
-
-            log.info("Google дані: googleId={}, email={}, name={} {}, picture={}",
-                    googleId, email, firstName, lastName, picture);
 
             if (email == null) {
                 log.error("Email від Google відсутній");
@@ -60,18 +59,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                 log.info("Створюємо нового користувача через Google");
 
                                 String nickName = email.substring(0, email.indexOf('@'));
-                                if (nickName.length() > 19) {
-                                    nickName = nickName.substring(0, 19);
-                                }
+                                if (nickName.length() > 19) nickName = nickName.substring(0, 19);
 
-                                // Перевіряємо унікальність
                                 int counter = 1;
                                 String baseNick = nickName;
                                 while (userRepository.existsByNickName(nickName)) {
                                     nickName = baseNick + "_" + counter++;
-                                    if (nickName.length() > 20) {
-                                        nickName = nickName.substring(0, 20);
-                                    }
+                                    if (nickName.length() > 20) nickName = nickName.substring(0, 20);
                                 }
 
                                 User newUser = User.builder()
@@ -81,27 +75,31 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                                         .lastName(lastName != null ? lastName : "User")
                                         .avatarUrl(picture)
                                         .nickName(nickName)
+                                        .aboutMe("")
                                         .birthDate(null)
                                         .firebaseUid(null)
-                                        .aboutMe(null)
                                         .createdAt(LocalDateTime.now())
                                         .build();
 
                                 return userRepository.save(newUser);
                             }));
 
-            log.info("Користувач готовий: id={}, email={}, nickName={}", user.getId(), user.getEmail(), user.getNickName());
-
             String jwt = jwtService.generateToken(user, true);
-            log.info("JWT успішно згенеровано");
 
-            String cookie = "jwt=" + jwt + "; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=604800";
-            response.addHeader("Set-Cookie", cookie);
-            log.info("Cookie встановлено");
+            // Повертаємо JSON з токеном
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.setStatus(HttpServletResponse.SC_OK);
 
-            String redirectUrl = "https://widi-rho.vercel.app/auth";
-            log.info("Редирект на: {}", redirectUrl);
-            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("token", jwt);
+            responseBody.put("redirectUrl", "https://widi-rho.vercel.app/auth"); // або просто "/"
+            responseBody.put("userId", user.getId().toString());
+            responseBody.put("email", user.getEmail());
+
+            objectMapper.writeValue(response.getWriter(), responseBody);
+
+            log.info("Google авторизація успішна, токен повернуто в JSON");
 
         } catch (Exception e) {
             log.error("Помилка в OAuth2 success handler", e);
