@@ -100,7 +100,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
             // 2. Редирект з токеном у query для фронту (WebSocket)
             String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
-            String redirectUrl = "https://widi-rho.vercel.app/auth" +
+            String redirectUrl = "https://terevenimo.vercel.app/auth" +
                     "?token=" + jwt +
                     "&userId=" + user.getId() +
                     "&email=" + encodedEmail;
