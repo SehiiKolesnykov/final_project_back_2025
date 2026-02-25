@@ -100,8 +100,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "https://widi-rho.vercel.app",      // продакшн
-                "http://localhost:5173"             // локальний фронт
+                "https://widi-rho.vercel.app",
+                "http://localhost:5173",
+                "https://terevenimo.vercel.app/"
         ));
         // Дозволяємо методи, які потрібні
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

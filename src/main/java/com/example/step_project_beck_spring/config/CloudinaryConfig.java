@@ -21,17 +21,13 @@ public class CloudinaryConfig {
     private final String apiKey;
     private final String apiSecret;
 
-    //     Конструктор викликається Spring-ом під час створення біну цього класу.
-    //     @Value(...) автоматично підтягує значення з application.yml
-    //     або з змінних оточення.
-
     public CloudinaryConfig(
             @Value("${cloudinary.cloud-name}") String cloudName,
             @Value("${cloudinary.api-key}") String apiKey,
             @Value("${cloudinary.api-secret}") String apiSecret) {
         this.cloudName = cloudName;
         this.apiKey = apiKey;
-        this.apiSecret = apiSecret; // Дуже важливо: цей секрет залишається тільки на сервері!
+        this.apiSecret = apiSecret;
     }
 
     @Bean
